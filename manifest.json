@@ -1,0 +1,22 @@
+{
+  "name": "英语小达人 - PEP四年级",
+  "short_name": "英语小达人",
+  "description": "人教版PEP四年级上册英语学习游戏小程序",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#F0F4FF",
+  "theme_color": "#4F46E5",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
