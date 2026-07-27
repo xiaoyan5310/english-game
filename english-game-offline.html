@@ -527,8 +527,7 @@ body {
 </div>
 
 <!-- Scripts -->
-<script>
-// ============================================================
+<script>// ============================================================
 // 人教版 PEP 四年级上册英语数据库
 // 同时支持新版(2025)和旧版教材
 // ============================================================
@@ -1185,12 +1184,112 @@ const PEP_DATA = {
     }
   ]
 };
-
 </script>
-<script>
-// ============================================================
+<script>// ============================================================
 // 英语小达人 - 主应用逻辑
 // ============================================================
+
+// ============================================================
+// 音效引擎（使用 Web Audio API，无需音频文件）
+// ============================================================
+var audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  return audioCtx;
+}
+
+// 消灭僵尸音效：短促有力的"啵"声 + 清脆叮咚
+function playKillSound() {
+  try {
+    var ctx = getAudioCtx();
+    var t = ctx.currentTime;
+
+    // 低频冲击波 — 模拟"啵"的打击感
+    var osc1 = ctx.createOscillator();
+    var gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(300, t);
+    osc1.frequency.exponentialRampToValueAtTime(80, t + 0.15);
+    gain1.gain.setValueAtTime(0.4, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(t);
+    osc1.stop(t + 0.2);
+
+    // 清脆叮咚声 — 奖励反馈
+    var osc2 = ctx.createOscillator();
+    var gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(880, t + 0.05);
+    osc2.frequency.setValueAtTime(1100, t + 0.1);
+    osc2.frequency.setValueAtTime(1320, t + 0.15);
+    gain2.gain.setValueAtTime(0.25, t + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(t + 0.05);
+    osc2.stop(t + 0.3);
+
+  } catch(e) { /* 静默忽略 */ }
+}
+
+// 错误音效：低沉嗡嗡
+function playErrorSound() {
+  try {
+    var ctx = getAudioCtx();
+    var t = ctx.currentTime;
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(150, t);
+    osc.frequency.setValueAtTime(100, t + 0.15);
+    gain.gain.setValueAtTime(0.15, t);
+    gain.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + 0.3);
+  } catch(e) {}
+}
+
+// 大嘴花 / 樱桃炸弹音效：更强烈的爆炸声
+function playBigKillSound() {
+  try {
+    var ctx = getAudioCtx();
+    var t = ctx.currentTime;
+
+    // 爆炸低频
+    var osc1 = ctx.createOscillator();
+    var gain1 = ctx.createGain();
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(200, t);
+    osc1.frequency.exponentialRampToValueAtTime(40, t + 0.3);
+    gain1.gain.setValueAtTime(0.35, t);
+    gain1.gain.exponentialRampToValueAtTime(0.001, t + 0.35);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(t);
+    osc1.stop(t + 0.35);
+
+    // 高音闪烁
+    var osc2 = ctx.createOscillator();
+    var gain2 = ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(1000, t + 0.05);
+    osc2.frequency.setValueAtTime(1400, t + 0.12);
+    osc2.frequency.setValueAtTime(1800, t + 0.2);
+    gain2.gain.setValueAtTime(0.3, t + 0.05);
+    gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+    osc2.connect(gain2);
+    gain2.connect(ctx.destination);
+    osc2.start(t + 0.05);
+    osc2.stop(t + 0.4);
+
+  } catch(e) {}
+}
 
 // 全局状态
 const state = {
@@ -2903,6 +3002,7 @@ function gamePvz(data) {
       sunlight = Math.max(0, sunlight - 5);
       updateSunDisplay();
       showToast('❌ 选错了！-5☀️', 1500);
+      playErrorSound();
       var area = document.getElementById('pvzArea');
       if (area) { area.style.animation = 'shake 0.3s ease'; setTimeout(function() { area.style.animation = ''; }, 300); }
       return;
@@ -2924,8 +3024,10 @@ function gamePvz(data) {
 
     if (lp && lp.chomp && z.hp <= 0) {
       bonus = 10;
+      playBigKillSound();
       document.getElementById('pvzInfo').textContent = '🌺 大嘴花一口吞掉！+' + bonus + '☀️';
     } else if (lp && lp.bomb) {
+      playBigKillSound();
       var lz = zombies.filter(function(zz) { return zz.alive && zz.lane === z.lane; });
       lz.forEach(function(zz) {
         zz.alive = false;
@@ -2940,6 +3042,7 @@ function gamePvz(data) {
       document.getElementById('pvzInfo').textContent = '💣 樱桃炸弹！整行消灭！+' + bonus + '☀️';
     } else {
       if (z.hp <= 0) {
+        playKillSound();
         z.alive = false;
         delete activeWords[z.word];
         z.el.style.transform = 'scale(0)'; z.el.style.opacity = '0';
@@ -3089,7 +3192,6 @@ function init() {
 }
 
 init();
-
 </script>
 </body>
 </html>
