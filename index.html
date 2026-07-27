@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="英语小达人">
+<link rel="manifest" href="manifest.json">
+<title>英语小达人 - PEP四年级</title>
+<script>
+// 离线缓存 Service Worker
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    // 直接用 Cache API 缓存当前页面所有资源，不需要单独 service worker 文件
+    if (window.caches) {
+      caches.open('english-game-v1').then(function(cache) {
+        var urls = [location.href, 'data.js', 'app.js', 'manifest.json'];
+        urls.forEach(function(url) {
+          cache.add(url).catch(function(){});
+        });
+      });
+    }
+  });
+}
+</script>
+<style>
+:root {
+  --primary: #4F46E5;
+  --primary-light: #818CF8;
+  --primary-dark: #3730A3;
+  --accent: #F59E0B;
+  --accent-light: #FCD34D;
+  --success: #10B981;
+  --danger: #EF4444;
+  --bg: #F0F4FF;
+  --card: #FFFFFF;
+  --text: #1E293B;
+  --text-light: #64748B;
+  --border: #E2E8F0;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+  --nav-height: 68px;
+  --header-height: 56px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Header */
+.header {
+  position: fixed; top:0; left:0; right:0; z-index:100;
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  padding: 12px 16px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: var(--header-height);
+  box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+}
+.header h1 { font-size:18px; font-weight:700; }
+.header .stars-display {
+  display:flex; align-items:center; gap:4px;
+  background: rgba(255,255,255,0.2); padding:6px 12px; border-radius:20px;
+  font-size:14px; font-weight:600;
+}
+.header .stars-display .star { font-size:16px; }
+
+/* Main content */
+.main {
+  padding-top: var(--header-height);
+  padding-bottom: var(--nav-height);
+  min-height: 100vh;
+}
+.page { display:none; padding:16px; }
+.page.active { display:block; animation: fadeIn 0.3s ease; }
+@keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+/* Bottom Nav */
+.nav {
+  position: fixed; bottom:0; left:0; right:0; z-index:100;
+  background: var(--card);
+  display: flex;
+  border-top: 1px solid var(--border);
+  height: var(--nav-height);
+  box-shadow: 0 -2px 8px rgba(0,0,0,0.04);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.nav-item {
+  flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:2px; font-size:11px; color: var(--text-light); cursor:pointer;
+  transition: color 0.2s;
+}
+.nav-item.active { color: var(--primary); font-weight:600; }
+.nav-item .nav-icon { font-size:22px; }
+
+/* Cards */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: var(--shadow);
+}
+.card-header {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom: 12px;
+}
+.card-title { font-size:16px; font-weight:700; }
+
+/* Unit grid */
+.unit-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+.unit-card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 14px 12px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: all 0.2s;
+  position: relative;
+}
+.unit-card:hover, .unit-card:active { border-color: var(--primary); transform: translateY(-2px); }
+.unit-card.selected { border-color: var(--primary); background: #EEF2FF; }
+.unit-card .unit-icon { font-size:32px; margin-bottom:6px; }
+.unit-card .unit-title { font-size:14px; font-weight:700; color: var(--primary); }
+.unit-card .unit-subtitle { font-size:11px; color: var(--text-light); margin-top:2px; }
+.unit-card .unit-progress {
+  margin-top:8px; height:4px; background: var(--border); border-radius:2px; overflow:hidden;
+}
+.unit-card .unit-progress-bar { height:100%; background: var(--success); border-radius:2px; transition:width 0.3s; }
+.unit-card .unit-stars { font-size:12px; color: var(--accent); margin-top:4px; }
+
+/* Buttons */
+.btn {
+  display:inline-flex; align-items:center; justify-content:center; gap:6px;
+  padding:10px 20px; border:none; border-radius: var(--radius-sm);
+  font-size:14px; font-weight:600; cursor:pointer; transition:all 0.2s;
+}
+.btn:active { transform:scale(0.96); }
+.btn-primary { background: var(--primary); color:white; }
+.btn-success { background: var(--success); color:white; }
+.btn-accent { background: var(--accent); color:white; }
+.btn-outline { background:white; color:var(--primary); border:2px solid var(--primary); }
+.btn-sm { padding:6px 14px; font-size:12px; }
+.btn-block { width:100%; }
+.btn-group { display:flex; gap:8px; flex-wrap:wrap; }
+
+/* Word cards */
+.word-list { display:flex; flex-direction:column; gap:8px; }
+.word-item {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px; background: var(--bg); border-radius: var(--radius-sm);
+  cursor: pointer; transition: all 0.15s;
+}
+.word-item:active { background: #E0E7FF; }
+.word-item .word-en { font-size:18px; font-weight:700; color: var(--primary); }
+.word-item .word-zh { font-size:14px; color: var(--text-light); }
+.word-item .word-type {
+  font-size:10px; padding:2px 8px; border-radius:10px;
+  background: var(--accent-light); color: #92400E;
+}
+
+/* Tab切换 */
+.tab-bar {
+  display:flex; gap:4px; background: var(--bg); padding:4px; border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+}
+.tab {
+  flex:1; text-align:center; padding:8px; border-radius:8px;
+  font-size:13px; font-weight:600; color: var(--text-light); cursor:pointer;
+  transition: all 0.2s;
+}
+.tab.active { background: var(--primary); color:white; }
+
+/* Exercise */
+.exercise-question {
+  font-size:16px; font-weight:600; margin-bottom:16px;
+  padding:16px; background: var(--bg); border-radius: var(--radius-sm);
+  text-align:center;
+}
+.exercise-options {
+  display:grid; grid-template-columns:1fr 1fr; gap:10px;
+}
+.exercise-option {
+  padding:14px; border:2px solid var(--border); border-radius: var(--radius-sm);
+  text-align:center; font-size:16px; font-weight:600; cursor:pointer;
+  transition: all 0.15s;
+}
+.exercise-option:active { transform:scale(0.96); }
+.exercise-option.correct { border-color: var(--success); background: #D1FAE5; color: var(--success); }
+.exercise-option.wrong { border-color: var(--danger); background: #FEE2E2; color: var(--danger); }
+.exercise-option.disabled { pointer-events:none; }
+.exercise-feedback {
+  text-align:center; margin-top:12px; font-size:15px; font-weight:600; min-height:24px;
+}
+
+/* Score bar */
+.score-bar {
+  display:flex; align-items:center; justify-content:space-between;
+  margin-bottom:12px; padding:10px 14px;
+  background: linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border-radius: var(--radius-sm);
+}
+.score-bar .score-text { font-size:14px; font-weight:600; }
+.score-bar .score-num { font-size:20px; font-weight:800; color: var(--accent); }
+
+/* Progress bar */
+.progress-bar {
+  height:8px; background: var(--border); border-radius:4px; overflow:hidden; margin-bottom:16px;
+}
+.progress-bar-fill {
+  height:100%; background: linear-gradient(90deg, var(--primary), var(--primary-light));
+  border-radius:4px; transition:width 0.3s;
+}
+
+/* Game cards */
+.game-grid {
+  display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;
+}
+.game-card {
+  background: var(--card); border-radius: var(--radius); padding:16px;
+  text-align:center; box-shadow: var(--shadow); cursor:pointer;
+  border:2px solid transparent; transition:all 0.2s;
+}
+.game-card:active { border-color: var(--primary); transform:scale(0.97); }
+.game-card .game-icon { font-size:40px; margin-bottom:8px; }
+.game-card .game-name { font-size:14px; font-weight:700; }
+.game-card .game-desc { font-size:11px; color: var(--text-light); margin-top:4px; }
+
+/* Modal */
+.modal-overlay {
+  position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200;
+  display:flex; align-items:flex-end; justify-content:center;
+}
+.modal {
+  background: var(--card); border-radius:20px 20px 0 0; width:100%; max-width:480px;
+  max-height:80vh; overflow-y:auto; padding:24px 16px; animation:slideUp 0.3s ease;
+}
+@keyframes slideUp { from { transform:translateY(100%); } to { transform:translateY(0); } }
+.modal h2 { font-size:18px; margin-bottom:16px; text-align:center; }
+.modal-close {
+  position:absolute; top:12px; right:16px;
+  font-size:24px; cursor:pointer; color:var(--text-light);
+  background:none; border:none;
+}
+
+/* Flash card */
+.flash-card {
+  width:100%; min-height:200px; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; cursor:pointer;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: var(--radius); color:white; padding:32px; margin-bottom:12px;
+  transition: transform 0.4s;
+}
+.flash-card .card-main { font-size:32px; font-weight:800; margin-bottom:8px; }
+.flash-card .card-sub { font-size:16px; opacity:0.8; }
+.flash-card .card-hint { font-size:13px; opacity:0.6; margin-top:8px; }
+
+/* 游戏专用样式 */
+.game-area {
+  position:relative; width:100%; min-height:300px;
+  background: var(--bg); border-radius: var(--radius); overflow:hidden;
+  margin-bottom:12px;
+}
+/* 抓大鹅 */
+.goose-item {
+  position:absolute; font-size:36px; cursor:pointer;
+  animation: gooseFly linear infinite;
+  transition: transform 0.1s;
+}
+.goose-item.caught { animation:none; opacity:0; transform:scale(0); transition:all 0.3s; }
+@keyframes gooseFly {
+  0% { transform:translateX(-60px) translateY(var(--y)); }
+  100% { transform:translateX(calc(100vw + 60px)) translateY(var(--y)); }
+}
+
+/* 消消乐 */
+.match-grid {
+  display:grid; grid-template-columns:repeat(3,1fr); gap:8px;
+}
+.match-card {
+  aspect-ratio:1; display:flex; align-items:center; justify-content:center;
+  border-radius: var(--radius-sm); font-size:13px; font-weight:700;
+  cursor:pointer; border:2px solid var(--border); transition:all 0.2s;
+  text-align:center; padding:4px; word-break:break-word;
+}
+.match-card.selected { border-color: var(--primary); background:#EEF2FF; transform:scale(0.95); }
+.match-card.matched { border-color: var(--success); background:#D1FAE5; opacity:0.5; pointer-events:none; }
+
+/* 记忆翻牌 */
+.memory-grid {
+  display:grid; grid-template-columns:repeat(4,1fr); gap:6px;
+}
+.memory-card {
+  aspect-ratio:1; border-radius: var(--radius-sm); cursor:pointer;
+  perspective:600px; font-size:12px;
+}
+.memory-card-inner {
+  width:100%; height:100%; position:relative; transition:transform 0.4s;
+  transform-style:preserve-3d;
+}
+.memory-card.flipped .memory-card-inner { transform:rotateY(180deg); }
+.memory-card.matched .memory-card-inner { transform:rotateY(180deg); }
+.memory-card.matched .memory-card-front { background:#D1FAE5; border-color:var(--success); }
+.memory-card-front, .memory-card-back {
+  position:absolute; width:100%; height:100%; backface-visibility:hidden;
+  display:flex; align-items:center; justify-content:center;
+  border-radius: var(--radius-sm); border:2px solid var(--border);
+  font-weight:700; padding:2px; text-align:center; word-break:break-word;
+}
+.memory-card-front { background:var(--card); }
+.memory-card-back {
+  background:linear-gradient(135deg, var(--primary), var(--primary-light));
+  color:white; font-size:20px; transform:rotateY(180deg);
+}
+
+/* 闪电答题 */
+.quiz-timer {
+  height:6px; background:var(--border); border-radius:3px; overflow:hidden; margin-bottom:16px;
+}
+.quiz-timer-bar {
+  height:100%; background:var(--danger); border-radius:3px;
+  transition:width 0.1s linear; width:100%;
+}
+.quiz-word { font-size:28px; font-weight:800; text-align:center; margin:20px 0; color:var(--primary); }
+.quiz-options { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+
+/* Grammar card */
+.grammar-card {
+  background:linear-gradient(135deg, #FEF3C7, #FDE68A);
+  border-radius:var(--radius-sm); padding:14px; margin-bottom:10px;
+}
+.grammar-card .grammar-title { font-size:14px; font-weight:700; margin-bottom:4px; }
+.grammar-card .grammar-content { font-size:13px; color:var(--text); line-height:1.5; }
+
+/* Animation */
+@keyframes bounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.05)} }
+@keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-5px)} 75%{transform:translateX(5px)} }
+@keyframes starPop { 0%{transform:scale(0);opacity:0} 50%{transform:scale(1.3);opacity:1} 100%{transform:scale(1);opacity:1} }
+.animate-bounce { animation:bounce 0.6s ease; }
+.animate-shake { animation:shake 0.3s ease; }
+.animate-star { animation:starPop 0.5s ease; }
+
+/* 植物大战僵尸 */
+.pvz-area{position:relative;width:100%;height:380px;background:linear-gradient(180deg,#87CEEB 0%,#90EE90 35%,#228B22 100%);border-radius:var(--radius);overflow:hidden;margin-bottom:12px}
+.pvz-lane{height:20%;border-bottom:1px dashed rgba(255,255,255,.2);position:relative}
+.pvz-plant{position:absolute;font-size:28px;left:8%;top:50%;transform:translateY(-50%);transition:all .1s}
+.pvz-zombie{position:absolute;font-size:28px;right:-60px;top:50%;transform:translateY(-50%);animation:pvzWalk linear forwards;z-index:2}
+.pvz-word{position:absolute;font-size:11px;font-weight:700;background:#fff;color:#333;padding:2px 6px;border-radius:4px;top:-20px;left:50%;transform:translateX(-50%);white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.pvz-options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
+@keyframes pvzWalk{0%{right:-60px}100%{right:calc(100% + 60px)}}
+
+/* 句子排序 */
+.sort-word{padding:8px 14px;background:var(--primary);color:#fff;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}.sort-word:active{transform:scale(.95)}
+
+/* Responsive */
+@media (min-width:768px) {
+  .main { max-width:480px; margin:0 auto; }
+  .modal { max-width:480px; margin:0 auto; }
+  .unit-grid { grid-template-columns: repeat(3, 1fr); }
+  .game-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0F172A; --card: #1E293B; --text: #F1F5F9;
+    --text-light: #94A3B8; --border: #334155;
+    --shadow: 0 2px 12px rgba(0,0,0,0.3);
+  }
+  .word-item { background: #1E293B; }
+  .tab-bar { background: #1E293B; }
+  .exercise-question { background: #1E293B; }
+  .game-area { background: #1E293B; }
+  .match-card { background: #1E293B; }
+  .match-card.selected { background: #1E1B4B; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>🏆 英语小达人</h1>
+  <div class="stars-display">
+    <span class="star">☀️</span>
+    <span id="totalStars">0</span>
+  </div>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+
+  <!-- 首页 -->
+  <div class="page active" id="page-home">
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📚 选择教材版本</span>
+      </div>
+      <div class="btn-group" style="margin-bottom:12px">
+        <button class="btn btn-primary btn-sm version-btn" data-version="new">2025新版</button>
+        <button class="btn btn-outline btn-sm version-btn" data-version="old">经典版</button>
+      </div>
+      <div style="font-size:12px; color:var(--text-light);" id="versionHint">
+        新版：Unit1 Helping at home · Unit2 My friends · Unit3 My school ...
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">📖 选择学习单元</span>
+        <span style="font-size:12px; color:var(--text-light);">可多选</span>
+      </div>
+      <div class="unit-grid" id="unitGrid"></div>
+    </div>
+
+    <div style="display:flex; gap:8px; margin-bottom:12px;">
+      <button class="btn btn-primary btn-block" onclick="startStudy()" style="flex:1">
+        📝 开始学习
+      </button>
+      <button class="btn btn-success btn-block" onclick="startExercise()" style="flex:1">
+        ✍️ 开始练习
+      </button>
+    </div>
+
+    <div class="card" style="text-align:center;">
+      <div style="font-size:40px; margin-bottom:8px;">📊</div>
+      <div class="card-title">学习统计</div>
+      <div style="display:flex; justify-content:space-around; margin-top:12px;">
+        <div>
+          <div style="font-size:24px; font-weight:800; color:var(--primary);" id="statWords">0</div>
+          <div style="font-size:12px; color:var(--text-light);">已学单词</div>
+        </div>
+        <div>
+          <div style="font-size:24px; font-weight:800; color:var(--success);" id="statCorrect">0</div>
+          <div style="font-size:12px; color:var(--text-light);">答题正确</div>
+        </div>
+        <div>
+          <div style="font-size:24px; font-weight:800; color:var(--accent);" id="statStars">0</div>
+          <div style="font-size:12px; color:var(--text-light);">阳光积分</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top:12px; padding:12px; background:#EFF6FF; border-radius:var(--radius-sm); text-align:center;">
+      <div style="font-size:12px; color:var(--text-light); margin-bottom:8px;">📲 想要离线使用？</div>
+      <button class="btn btn-outline btn-sm" onclick="downloadOffline()" style="background:#fff;">
+        📥 下载离线版本
+      </button>
+    </div>
+  </div>
+
+  <!-- 词汇页 -->
+  <div class="page" id="page-vocab">
+    <div class="tab-bar" id="vocabTabs">
+      <div class="tab active" data-tab="words">📝 单词</div>
+      <div class="tab" data-tab="phrases">📎 短语</div>
+      <div class="tab" data-tab="sentences">💬 句型</div>
+      <div class="tab" data-tab="grammar">📐 语法</div>
+    </div>
+    <div id="vocabContent"></div>
+  </div>
+
+  <!-- 练习页 -->
+  <div class="page" id="page-exercise">
+    <div class="score-bar">
+      <span class="score-text">📊 得分</span>
+      <span class="score-num"><span id="exScore">0</span> / <span id="exTotal">0</span></span>
+    </div>
+    <div class="progress-bar"><div class="progress-bar-fill" id="exProgress" style="width:0%"></div></div>
+    <div class="exercise-question" id="exQuestion"></div>
+    <div class="exercise-options" id="exOptions"></div>
+    <div class="exercise-feedback" id="exFeedback"></div>
+    <div style="display:flex; gap:8px; margin-top:12px;">
+      <button class="btn btn-primary btn-block" id="exNextBtn" onclick="nextExercise()" style="display:none; flex:1">
+        下一题 ▶
+      </button>
+    </div>
+    <button class="btn btn-outline btn-block" style="margin-top:8px" onclick="resetExercise()">🔄 重新开始</button>
+  </div>
+
+  <!-- 游戏页 -->
+  <div class="page" id="page-game">
+    <div class="card" style="margin-bottom:16px">
+      <div style="font-size:13px; color:var(--text-light); text-align:center;">
+        🎯 使用当前选中的单元词汇玩游戏，边玩边学！
+      </div>
+    </div>
+    <div class="game-grid" id="gameGrid"></div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<div class="nav">
+  <div class="nav-item active" data-page="home">
+    <span class="nav-icon">🏠</span> 首页
+  </div>
+  <div class="nav-item" data-page="vocab">
+    <span class="nav-icon">📚</span> 词汇
+  </div>
+  <div class="nav-item" data-page="exercise">
+    <span class="nav-icon">📝</span> 练习
+  </div>
+  <div class="nav-item" data-page="game">
+    <span class="nav-icon">🎮</span> 游戏
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay" style="display:none">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<!-- Scripts -->
+<script src="data.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
