@@ -77,6 +77,20 @@ const PEP_DATA = {
         { title: 'Is this/that ...? 句型', content: '用来询问"这是/那是……吗？"回答用 Yes, it is. / No, it isn\'t.' },
         { title: 'What\'s ... job? 句型', content: '用来询问某人的职业。回答用 He\'s/She\'s a + 职业。' },
         { title: '人称代词 he/she', content: 'he 指男性"他"，she 指女性"她"。He\'s = He is, She\'s = She is。' },
+      ],
+      dialogues: [
+        { speaker: 'Sarah', en: "Is this your mother?", zh: "这是你的妈妈吗？" },
+        { speaker: 'Amy', en: "Yes, it is.", zh: "是的，她是。" },
+        { speaker: 'Sarah', en: "What's your mother's job?", zh: "你妈妈做什么工作？" },
+        { speaker: 'Amy', en: "She's a doctor.", zh: "她是医生。" },
+        { speaker: 'Sarah', en: "Is this your father?", zh: "这是你的爸爸吗？" },
+        { speaker: 'Amy', en: "Yes, it is. He's a doctor, too.", zh: "是的。他也是医生。" },
+        { speaker: 'Amy', en: "Mum and Dad are busy and tired.", zh: "爸爸妈妈又忙又累。" },
+        { speaker: 'Wu Binbin', en: "What can we do for them?", zh: "我们能为他们做些什么？" },
+        { speaker: 'Amy', en: "We can do some chores.", zh: "我们可以做一些家务活。" },
+        { speaker: 'Wu Binbin', en: "I can sweep the floor.", zh: "我会扫地。" },
+        { speaker: 'Amy', en: "Let's cook together!", zh: "我们一起做饭吧！" },
+        { speaker: 'Wu Binbin', en: "That's great!", zh: "太好了！" },
       ]
     },
     // ---------- Unit 2: My friends ----------
@@ -136,6 +150,17 @@ const PEP_DATA = {
         { title: 'He/She has ...', content: '描述某人拥有……。He has ... / She has ... 注意第三人称单数用 has。' },
         { title: '形容词描述外貌', content: 'tall(高的), short(矮的), strong(强壮的), thin(瘦的), quiet(安静的), friendly(友好的)' },
         { title: 'his vs her', content: 'his = 他的(男), her = 她的(女)。What\'s his/her name? = 他/她叫什么名字？' },
+      ],
+      dialogues: [
+        { speaker: 'John', en: "I have a new friend.", zh: "我有一个新朋友。" },
+        { speaker: 'Sarah', en: "What's his name?", zh: "他叫什么名字？" },
+        { speaker: 'John', en: "His name is Zhang Peng.", zh: "他叫张鹏。" },
+        { speaker: 'Sarah', en: "Is he tall?", zh: "他高吗？" },
+        { speaker: 'John', en: "Yes, he is. He's tall and strong.", zh: "是的，他又高又壮。" },
+        { speaker: 'Sarah', en: "Does he have glasses?", zh: "他戴眼镜吗？" },
+        { speaker: 'John', en: "No. He has blue shoes.", zh: "不。他穿蓝色的鞋子。" },
+        { speaker: 'Sarah', en: "Is he friendly?", zh: "他友好吗？" },
+        { speaker: 'John', en: "Yes, he is very friendly.", zh: "是的，他很友好。" },
       ]
     },
     // ---------- Unit 3: Places we live in ----------
