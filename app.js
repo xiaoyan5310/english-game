@@ -204,8 +204,8 @@ window.downloadOffline = function() {
   });
   document.getElementById('versionHint').textContent =
     state.version === 'new'
-      ? '新版：Unit1 Helping at home · Unit2 My friends · Unit3 Places we live in · Unit4 Helping in the community · Unit5 The weather and us · Unit6 Changing for the seasons'
-      : '经典版：Unit1 My classroom · Unit2 My schoolbag · Unit3 My friends · Unit4 My home · Unit5 Dinner · Unit6 Family';
+      ? '人教PEP4上：Unit1 Helping at home · Unit2 My friends · Unit3 Places we live in · Unit4 Helping in the community · Unit5 The weather and us · Unit6 Changing for the seasons'
+      : '';
 
   // 单元网格
   const grid = document.getElementById('unitGrid');
