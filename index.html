@@ -9,6 +9,54 @@
 <link rel="manifest" href="manifest.json">
 <title>英语小达人 - 人教版PEP四上</title>
 <script>
+// ============ 密码保护 ============
+(function() {
+  var PASSWORD = 'English2025';
+  var STORAGE_KEY = 'pep_english_auth';
+
+  // 已通过验证的直接放行
+  if (localStorage.getItem(STORAGE_KEY) === 'ok') return;
+
+  // 显示密码输入界面
+  var overlay = document.createElement('div');
+  overlay.id = 'pwOverlay';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#4F46E5,#7C3AED);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,sans-serif;';
+
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:32px 24px;text-align:center;max-width:320px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,0.3);">' +
+    '<div style="font-size:56px;margin-bottom:12px;">🔐</div>' +
+    '<h2 style="margin:0 0 8px;font-size:22px;color:#1F2937;">英语小达人</h2>' +
+    '<p style="margin:0 0 20px;font-size:13px;color:#6B7280;">请输入密码解锁</p>' +
+    '<input id="pwInput" type="password" placeholder="请输入密码" style="width:100%;padding:12px 16px;border:2px solid #E5E7EB;border-radius:12px;font-size:16px;text-align:center;outline:none;box-sizing:border-box;margin-bottom:12px;" autofocus>' +
+    '<button id="pwSubmit" style="width:100%;padding:12px;background:linear-gradient(135deg,#4F46E5,#7C3AED);color:#fff;border:none;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;">🔓 解锁</button>' +
+    '<p id="pwError" style="margin:12px 0 0;font-size:12px;color:#EF4444;min-height:18px;"></p>' +
+    '</div>';
+
+  document.documentElement.appendChild(overlay);
+  // 阻止页面渲染
+  document.documentElement.style.display = 'none';
+
+  function tryUnlock() {
+    var val = document.getElementById('pwInput').value.trim();
+    if (val === PASSWORD) {
+      localStorage.setItem(STORAGE_KEY, 'ok');
+      document.documentElement.style.display = '';
+      overlay.remove();
+    } else {
+      document.getElementById('pwError').textContent = '❌ 密码错误，请重试';
+      document.getElementById('pwInput').value = '';
+      document.getElementById('pwInput').focus();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('pwSubmit').addEventListener('click', tryUnlock);
+    document.getElementById('pwInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') tryUnlock();
+    });
+  });
+})();
+</script>
+<script>
 // 离线缓存 Service Worker
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', function() {
