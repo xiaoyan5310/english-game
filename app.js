@@ -265,15 +265,15 @@ function startExercise() {
 // ==================== 课文点读（课本风格） ====================
 // 角色头像映射
 var CHARACTERS = {
-  'Amy':      { icon: '👧🏻', color: '#EC4899', name: 'Amy' },
-  'Sarah':    { icon: '👩🏻', color: '#F59E0B', name: 'Sarah' },
-  'John':     { icon: '👦🏻', color: '#3B82F6', name: 'John' },
-  'Mike':     { icon: '👦🏼', color: '#22C55E', name: 'Mike' },
-  'Wu Binbin':{ icon: '👦🏻', color: '#8B5CF6', name: '吴彬彬' },
-  'Chen Jie': { icon: '👧🏻', color: '#EF4444', name: '陈杰' },
-  'Mum':      { icon: '👩‍🦰', color: '#F97316', name: '妈妈' },
-  'Old Man':  { icon: '👴🏻', color: '#78716C', name: '老人' },
-  'default':  { icon: '🙂', color: '#6B7280', name: '' }
+  'Amy':      { icon: '👧🏻', color: '#EC4899', name: 'Amy',      voice: { rate: 0.92, pitch: 1.5 } },
+  'Sarah':    { icon: '👩🏻', color: '#F59E0B', name: 'Sarah',    voice: { rate: 0.85, pitch: 1.1 } },
+  'John':     { icon: '👦🏻', color: '#3B82F6', name: 'John',     voice: { rate: 0.9,  pitch: 1.4 } },
+  'Mike':     { icon: '👦🏼', color: '#22C55E', name: 'Mike',     voice: { rate: 0.9,  pitch: 1.45 } },
+  'Wu Binbin':{ icon: '👦🏻', color: '#8B5CF6', name: '吴彬彬',   voice: { rate: 0.88, pitch: 1.35 } },
+  'Chen Jie': { icon: '👧🏻', color: '#EF4444', name: '陈杰',     voice: { rate: 0.9,  pitch: 1.55 } },
+  'Mum':      { icon: '👩‍🦰', color: '#F97316', name: '妈妈',     voice: { rate: 0.82, pitch: 0.95 } },
+  'Old Man':  { icon: '👴🏻', color: '#78716C', name: '老人',     voice: { rate: 0.75, pitch: 0.7 } },
+  'default':  { icon: '🙂', color: '#6B7280', name: '',         voice: { rate: 0.85, pitch: 1.0 } }
 };
 
 function openDialogue() {
@@ -346,14 +346,18 @@ function openDialogue() {
   units.forEach(function(unit, ui) {
     if (!unit.dialogues) return;
     unit.dialogues.forEach(function(d, di) {
-      window._dialogueData['d_' + ui + '_' + di] = d.en;
+      var key = 'd_' + ui + '_' + di;
+      window._dialogueData[key] = { text: d.en, speaker: d.speaker };
     });
   });
 }
 
-// 朗读单句
+// 朗读单句（不同角色不同音色）
 window.speakDialogue = function(sid) {
-  var text = window._dialogueData && window._dialogueData[sid];
+  var data = window._dialogueData && window._dialogueData[sid];
+  if (!data) return;
+  var text = data.text;
+  var ch = CHARACTERS[data.speaker] || CHARACTERS['default'];
   if (!text) return;
 
   var el = document.getElementById(sid);
@@ -384,8 +388,8 @@ window.speakDialogue = function(sid) {
     window.speechSynthesis.cancel();
     var utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'en-US';
-    utter.rate = 0.82;
-    utter.pitch = 1.1;
+    utter.rate = ch.voice.rate;
+    utter.pitch = ch.voice.pitch;
     window.speechSynthesis.speak(utter);
   }
 };
