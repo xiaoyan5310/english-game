@@ -281,17 +281,17 @@ body {
 
 /* Game cards */
 .game-grid {
-  display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
 }
 .game-card {
-  background: var(--card); border-radius: var(--radius); padding:16px;
+  background: var(--card); border-radius: var(--radius); padding:12px 8px;
   text-align:center; box-shadow: var(--shadow); cursor:pointer;
   border:2px solid transparent; transition:all 0.2s;
 }
 .game-card:active { border-color: var(--primary); transform:scale(0.97); }
-.game-card .game-icon { font-size:40px; margin-bottom:8px; }
-.game-card .game-name { font-size:14px; font-weight:700; }
-.game-card .game-desc { font-size:11px; color: var(--text-light); margin-top:4px; }
+.game-card .game-icon { font-size:32px; margin-bottom:6px; }
+.game-card .game-name { font-size:12px; font-weight:700; }
+.game-card .game-desc { font-size:10px; color: var(--text-light); margin-top:2px; }
 
 /* Modal */
 .modal-overlay {
@@ -3421,7 +3421,6 @@ function gameWhack(data) {
     '<span>⏱️ <strong id="whackTimer">60</strong>s</span></div>' +
     '<div style="text-align:center;font-size:14px;margin:8px 0;min-height:22px;" id="whackTarget">准备...</div>' +
     '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;background:#5D4037;border-radius:var(--radius);padding:8px;" id="whackArea">' + holesHTML + '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;min-height:42px;" id="whackOptions"></div>' +
     '<button class="btn btn-outline btn-block btn-sm" style="margin-top:8px" onclick="closeModal()">退出</button>'
   );
 
@@ -3434,23 +3433,7 @@ function gameWhack(data) {
     var idx = Math.floor(Math.random() * words.length);
     targetWord = words[idx];
     document.getElementById('whackTarget').innerHTML = '🎯 找出：<strong style="color:#EF4444;">' + targetWord.zh + '</strong>';
-    updateOptions();
     popMoles();
-  }
-
-  // 更新底部选项
-  function updateOptions() {
-    var opts = document.getElementById('whackOptions');
-    if (!opts) return;
-    // 生成选项：1个正确 + 3个干扰
-    var correct = targetWord.en;
-    var wrongs = words.filter(function(w) { return w.en !== correct; })
-      .sort(function() { return Math.random() - 0.5; }).slice(0, 3).map(function(w) { return w.en; });
-    var all = [correct].concat(wrongs).sort(function() { return Math.random() - 0.5; });
-
-    opts.innerHTML = all.map(function(o) {
-      return '<button class="btn btn-sm" style="background:' + (o === correct ? 'var(--success)' : 'var(--primary)') + ';color:#fff;font-size:13px;flex:0 0 auto;" onclick="whackChoose(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>';
-    }).join('');
   }
 
   // 地鼠冒出来
@@ -3513,26 +3496,6 @@ function gameWhack(data) {
     hideMole(hole);
 
     if (moleData.word.en === targetWord.en) {
-      score++;
-      document.getElementById('whackScore').textContent = score;
-      showToast('✅ 正确！', 800);
-      playKillSound();
-      pickTarget();
-    } else {
-      miss++;
-      document.getElementById('whackMiss').textContent = maxMiss - miss;
-      showToast('❌ 不对！❤️-' + (maxMiss - miss), 800);
-      playErrorSound();
-      if (miss >= maxMiss) {
-        endWhackGame();
-      }
-    }
-  };
-
-  // 底部选项点击
-  window.whackChoose = function(chosen) {
-    if (gameOver) return;
-    if (chosen === targetWord.en) {
       score++;
       document.getElementById('whackScore').textContent = score;
       showToast('✅ 正确！', 800);

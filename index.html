@@ -281,17 +281,17 @@ body {
 
 /* Game cards */
 .game-grid {
-  display:grid; grid-template-columns:repeat(2, 1fr); gap:12px;
+  display:grid; grid-template-columns:repeat(3, 1fr); gap:10px;
 }
 .game-card {
-  background: var(--card); border-radius: var(--radius); padding:16px;
+  background: var(--card); border-radius: var(--radius); padding:12px 8px;
   text-align:center; box-shadow: var(--shadow); cursor:pointer;
   border:2px solid transparent; transition:all 0.2s;
 }
 .game-card:active { border-color: var(--primary); transform:scale(0.97); }
-.game-card .game-icon { font-size:40px; margin-bottom:8px; }
-.game-card .game-name { font-size:14px; font-weight:700; }
-.game-card .game-desc { font-size:11px; color: var(--text-light); margin-top:4px; }
+.game-card .game-icon { font-size:32px; margin-bottom:6px; }
+.game-card .game-name { font-size:12px; font-weight:700; }
+.game-card .game-desc { font-size:10px; color: var(--text-light); margin-top:2px; }
 
 /* Modal */
 .modal-overlay {

@@ -2182,7 +2182,6 @@ function gameWhack(data) {
     '<span>⏱️ <strong id="whackTimer">60</strong>s</span></div>' +
     '<div style="text-align:center;font-size:14px;margin:8px 0;min-height:22px;" id="whackTarget">准备...</div>' +
     '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;background:#5D4037;border-radius:var(--radius);padding:8px;" id="whackArea">' + holesHTML + '</div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;min-height:42px;" id="whackOptions"></div>' +
     '<button class="btn btn-outline btn-block btn-sm" style="margin-top:8px" onclick="closeModal()">退出</button>'
   );
 
@@ -2195,23 +2194,7 @@ function gameWhack(data) {
     var idx = Math.floor(Math.random() * words.length);
     targetWord = words[idx];
     document.getElementById('whackTarget').innerHTML = '🎯 找出：<strong style="color:#EF4444;">' + targetWord.zh + '</strong>';
-    updateOptions();
     popMoles();
-  }
-
-  // 更新底部选项
-  function updateOptions() {
-    var opts = document.getElementById('whackOptions');
-    if (!opts) return;
-    // 生成选项：1个正确 + 3个干扰
-    var correct = targetWord.en;
-    var wrongs = words.filter(function(w) { return w.en !== correct; })
-      .sort(function() { return Math.random() - 0.5; }).slice(0, 3).map(function(w) { return w.en; });
-    var all = [correct].concat(wrongs).sort(function() { return Math.random() - 0.5; });
-
-    opts.innerHTML = all.map(function(o) {
-      return '<button class="btn btn-sm" style="background:' + (o === correct ? 'var(--success)' : 'var(--primary)') + ';color:#fff;font-size:13px;flex:0 0 auto;" onclick="whackChoose(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>';
-    }).join('');
   }
 
   // 地鼠冒出来
@@ -2274,26 +2257,6 @@ function gameWhack(data) {
     hideMole(hole);
 
     if (moleData.word.en === targetWord.en) {
-      score++;
-      document.getElementById('whackScore').textContent = score;
-      showToast('✅ 正确！', 800);
-      playKillSound();
-      pickTarget();
-    } else {
-      miss++;
-      document.getElementById('whackMiss').textContent = maxMiss - miss;
-      showToast('❌ 不对！❤️-' + (maxMiss - miss), 800);
-      playErrorSound();
-      if (miss >= maxMiss) {
-        endWhackGame();
-      }
-    }
-  };
-
-  // 底部选项点击
-  window.whackChoose = function(chosen) {
-    if (gameOver) return;
-    if (chosen === targetWord.en) {
       score++;
       document.getElementById('whackScore').textContent = score;
       showToast('✅ 正确！', 800);
