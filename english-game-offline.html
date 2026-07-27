@@ -3475,7 +3475,7 @@ function gameWhack(data) {
     });
 
     // 1.5-2.5秒后换一轮
-    var delay = 1500 + Math.random() * 1000;
+    var delay = 2500 + Math.random() * 1500; // 2.5-4秒，地鼠停留更久
     var timer = setTimeout(function() {
       if (!gameOver) popMoles();
     }, delay);
@@ -3591,7 +3591,6 @@ function gameBubble(data) {
     '<span>⏱️ <strong id="bubTimer">60</strong>s</span></div>' +
     '<div style="text-align:center;font-size:14px;margin:8px 0;min-height:22px;" id="bubTarget">准备...</div>' +
     '<div style="position:relative;height:300px;background:linear-gradient(180deg,#1E3A5F,#0F172A);border-radius:var(--radius);overflow:hidden;" id="bubArea"></div>' +
-    '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;min-height:42px;" id="bubOptions"></div>' +
     '<button class="btn btn-outline btn-block btn-sm" style="margin-top:8px" onclick="closeModal()">退出</button>'
   );
 
@@ -3602,21 +3601,7 @@ function gameBubble(data) {
   function pickTarget() {
     var idx = Math.floor(Math.random() * words.length);
     targetWord = words[idx];
-    document.getElementById('bubTarget').innerHTML = '🎯 点破：<strong style="color:#3B82F6;">' + targetWord.zh + '</strong> 对应的英语泡泡';
-    updateOptions();
-  }
-
-  function updateOptions() {
-    var opts = document.getElementById('bubOptions');
-    if (!opts) return;
-    var correct = targetWord.en;
-    var wrongs = words.filter(function(w) { return w.en !== correct; })
-      .sort(function() { return Math.random() - 0.5; }).slice(0, 3).map(function(w) { return w.en; });
-    var all = [correct].concat(wrongs).sort(function() { return Math.random() - 0.5; });
-
-    opts.innerHTML = all.map(function(o) {
-      return '<button class="btn btn-sm" style="background:' + (o === correct ? 'var(--success)' : 'var(--primary)') + ';color:#fff;font-size:13px;flex:0 0 auto;" onclick="bubChoose(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>';
-    }).join('');
+    document.getElementById('bubTarget').innerHTML = '🎯 点破中文 <strong style="color:#FBBF24;">' + targetWord.zh + '</strong> 对应的英语泡泡！';
   }
 
   function spawnBubble() {
@@ -3661,23 +3646,6 @@ function gameBubble(data) {
     setTimeout(function() { if (b.el.parentNode) b.el.remove(); }, 200);
 
     if (b.word.en === targetWord.en) {
-      score++;
-      document.getElementById('bubScore').textContent = score;
-      showToast('✅ 正确！', 800);
-      playKillSound();
-      pickTarget();
-    } else {
-      miss++;
-      document.getElementById('bubMiss').textContent = maxMiss - miss;
-      showToast('❌ 不对！', 800);
-      playErrorSound();
-      if (miss >= maxMiss) endBubGame();
-    }
-  };
-
-  window.bubChoose = function(chosen) {
-    if (gameOver) return;
-    if (chosen === targetWord.en) {
       score++;
       document.getElementById('bubScore').textContent = score;
       showToast('✅ 正确！', 800);
