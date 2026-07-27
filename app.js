@@ -262,11 +262,23 @@ function startExercise() {
   navigate('exercise');
 }
 
-// ==================== 课文点读 ====================
+// ==================== 课文点读（课本风格） ====================
+// 角色头像映射
+var CHARACTERS = {
+  'Amy':      { icon: '👧🏻', color: '#EC4899', name: 'Amy' },
+  'Sarah':    { icon: '👩🏻', color: '#F59E0B', name: 'Sarah' },
+  'John':     { icon: '👦🏻', color: '#3B82F6', name: 'John' },
+  'Mike':     { icon: '👦🏼', color: '#22C55E', name: 'Mike' },
+  'Wu Binbin':{ icon: '👦🏻', color: '#8B5CF6', name: '吴彬彬' },
+  'Chen Jie': { icon: '👧🏻', color: '#EF4444', name: '陈杰' },
+  'Mum':      { icon: '👩‍🦰', color: '#F97316', name: '妈妈' },
+  'Old Man':  { icon: '👴🏻', color: '#78716C', name: '老人' },
+  'default':  { icon: '🙂', color: '#6B7280', name: '' }
+};
+
 function openDialogue() {
   var data = getData();
   var sel = [...state.selectedUnits];
-  // 找到选中的单元数据
   var units = data.filter(function(u) { return sel.indexOf(u.id) >= 0; });
 
   if (units.length === 0) {
@@ -275,30 +287,57 @@ function openDialogue() {
   }
 
   var allHTML = '';
+
   units.forEach(function(unit, ui) {
     if (!unit.dialogues || unit.dialogues.length === 0) return;
 
-    var color = ['#8B5CF6','#EC4899','#3B82F6','#F59E0B','#22C55E','#EF4444'][ui % 6];
-
     var dialogueHTML = unit.dialogues.map(function(d, di) {
+      var ch = CHARACTERS[d.speaker] || CHARACTERS['default'];
       var sid = 'd_' + ui + '_' + di;
-      return '<div class="dialogue-line" id="' + sid + '" onclick="speakDialogue(\'' + sid + '\')" style="padding:10px 12px;margin:6px 0;border-radius:10px;background:var(--card);border-left:4px solid ' + color + ';cursor:pointer;transition:all 0.15s;">' +
-        '<div style="font-size:11px;color:' + color + ';font-weight:700;margin-bottom:4px;">' + d.speaker + '</div>' +
-        '<div style="font-size:15px;color:var(--text);font-weight:600;line-height:1.5;">' + d.en + '</div>' +
-        '<div style="font-size:12px;color:var(--text-light);margin-top:3px;">' + d.zh + '</div>' +
-        '<span style="float:right;font-size:18px;margin-top:-10px;">🔊</span>' +
-        '</div>';
+      var isLeft = (di % 2 === 0); // 交替左右
+
+      if (isLeft) {
+        // 左侧气泡
+        return '<div class="d-msg d-msg-left" id="' + sid + '" onclick="speakDialogue(\'' + sid + '\')" style="display:flex;align-items:flex-start;gap:10px;margin:10px 0;cursor:pointer;">' +
+          '<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:' + ch.color + '22;display:flex;align-items:center;justify-content:center;font-size:26px;">' + ch.icon + '</div>' +
+          '<div style="flex:1;">' +
+            '<div style="font-size:11px;color:' + ch.color + ';font-weight:700;margin-bottom:3px;">' + ch.name + '</div>' +
+            '<div style="background:#fff;border-radius:4px 16px 16px 16px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);">' +
+              '<div style="font-size:15px;color:var(--text);font-weight:600;line-height:1.5;">' + d.en + '</div>' +
+              '<div style="font-size:12px;color:var(--text-light);margin-top:3px;padding-top:3px;border-top:1px dashed #E5E7EB;">' + d.zh + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<span style="flex-shrink:0;font-size:16px;margin-top:20px;opacity:0.4;">🔊</span>' +
+          '</div>';
+      } else {
+        // 右侧气泡
+        return '<div class="d-msg d-msg-right" id="' + sid + '" onclick="speakDialogue(\'' + sid + '\')" style="display:flex;align-items:flex-start;gap:10px;margin:10px 0;cursor:pointer;flex-direction:row-reverse;">' +
+          '<div style="flex-shrink:0;width:44px;height:44px;border-radius:50%;background:' + ch.color + '22;display:flex;align-items:center;justify-content:center;font-size:26px;">' + ch.icon + '</div>' +
+          '<div style="flex:1;text-align:right;">' +
+            '<div style="font-size:11px;color:' + ch.color + ';font-weight:700;margin-bottom:3px;">' + ch.name + '</div>' +
+            '<div style="background:' + ch.color + '11;border-radius:16px 4px 16px 16px;padding:10px 14px;box-shadow:0 1px 3px rgba(0,0,0,0.08);text-align:left;">' +
+              '<div style="font-size:15px;color:var(--text);font-weight:600;line-height:1.5;">' + d.en + '</div>' +
+              '<div style="font-size:12px;color:var(--text-light);margin-top:3px;padding-top:3px;border-top:1px dashed #E5E7EB;">' + d.zh + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<span style="flex-shrink:0;font-size:16px;margin-top:20px;opacity:0.4;">🔊</span>' +
+          '</div>';
+      }
     }).join('');
 
-    allHTML += '<div style="margin-bottom:16px;">' +
-      '<h3 style="margin:0 0 8px;font-size:16px;color:' + color + ';">' + unit.icon + ' ' + unit.subtitle + ' - ' + unit.titleCN + '</h3>' +
-      dialogueHTML + '</div>';
+    allHTML += '<div style="margin-bottom:20px;">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:10px 14px;background:linear-gradient(135deg,#F5F3FF,#EDE9FE);border-radius:12px;">' +
+      '<span style="font-size:28px;">' + unit.icon + '</span>' +
+      '<div><div style="font-size:15px;font-weight:700;color:var(--primary);">' + unit.subtitle + '</div>' +
+      '<div style="font-size:12px;color:var(--text-light);">' + unit.titleCN + '</div></div>' +
+      '</div>' +
+      '<div style="background:#F8F7FC;border-radius:16px;padding:12px;">' + dialogueHTML + '</div>' +
+      '</div>';
   });
 
   var modal = showModal(
-    '<h2>📖 课文点读</h2>' +
-    '<div style="font-size:12px;color:var(--text-light);margin-bottom:12px;">点击任意一句话，听朗读 🔊</div>' +
-    '<div style="max-height:60vh;overflow-y:auto;">' + allHTML + '</div>' +
+    '<h2 style="display:flex;align-items:center;gap:8px;"><span>📖</span> 课文点读 <span style="font-size:12px;color:var(--text-light);font-weight:400;">点击句子听朗读</span></h2>' +
+    '<div style="max-height:62vh;overflow-y:auto;padding-right:4px;">' + allHTML + '</div>' +
     '<button class="btn btn-outline btn-block btn-sm" style="margin-top:12px" onclick="closeModal()">关闭</button>'
   );
 
@@ -317,24 +356,36 @@ window.speakDialogue = function(sid) {
   var text = window._dialogueData && window._dialogueData[sid];
   if (!text) return;
 
-  // 高亮当前行
   var el = document.getElementById(sid);
   if (el) {
-    el.style.background = '#EDE9FE';
-    el.style.transform = 'scale(1.02)';
-    setTimeout(function() {
-      el.style.background = 'var(--card)';
-      el.style.transform = 'scale(1)';
-    }, 600);
+    // 找到气泡div并高亮
+    var bubble = el.querySelector('div[style] div[style]');
+    if (!bubble) {
+      var divs = el.querySelectorAll('div');
+      for (var i = 0; i < divs.length; i++) {
+        if (divs[i].textContent.indexOf(text) >= 0) {
+          bubble = divs[i];
+          break;
+        }
+      }
+    }
+    if (bubble) {
+      bubble.style.transition = 'all 0.2s';
+      bubble.style.boxShadow = '0 0 0 3px var(--primary), 0 4px 12px rgba(79,70,229,0.3)';
+      bubble.style.transform = 'scale(1.03)';
+      setTimeout(function() {
+        bubble.style.boxShadow = '0 1px 3px rgba(0,0,0,0.08)';
+        bubble.style.transform = 'scale(1)';
+      }, 800);
+    }
   }
 
-  // 朗读
   if ('speechSynthesis' in window) {
     window.speechSynthesis.cancel();
     var utter = new SpeechSynthesisUtterance(text);
     utter.lang = 'en-US';
-    utter.rate = 0.85;
-    utter.pitch = 1;
+    utter.rate = 0.82;
+    utter.pitch = 1.1;
     window.speechSynthesis.speak(utter);
   }
 };
