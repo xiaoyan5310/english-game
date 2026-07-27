@@ -885,7 +885,9 @@ function showExerciseResult() {
 
 // ==================== 游戏页 ====================
 const GAMES = [
-  { id: 'pvz', name: '植物大战僵尸', icon: '🧟', desc: '用阳光种植物，打败英语僵尸！', color: '#22C55E' },
+  { id: 'pvz', name: '植物大战僵尸', icon: '🧟', desc: '用阳光种植物，打败英语僵尸！', color: '#22C55E', hot: true },
+  { id: 'whack', name: '打地鼠', icon: '🔨', desc: '地鼠冒出来，敲对中文就得分！', color: '#F97316', hot: true },
+  { id: 'bubble', name: '泡泡龙', icon: '🫧', desc: '点破正确的英语泡泡', color: '#3B82F6', hot: true },
   { id: 'goose', name: '抓大鹅', icon: '🦢', desc: '点击飞过的正确单词', color: '#10B981' },
   { id: 'match', name: '消消乐', icon: '💥', desc: '中英文配对消除', color: '#F59E0B' },
   { id: 'memory', name: '记忆翻牌', icon: '🃏', desc: '翻牌找配对', color: '#8B5CF6' },
@@ -895,13 +897,14 @@ const GAMES = [
 ];
 
 function renderGame() {
-  document.getElementById('gameGrid').innerHTML = GAMES.map(g => `
-    <div class="game-card" onclick="startGame('${g.id}')" style="border-top:3px solid ${g.color};">
-      <div class="game-icon">${g.icon}</div>
-      <div class="game-name">${g.name}</div>
-      <div class="game-desc">${g.desc}</div>
-    </div>
-  `).join('');
+  document.getElementById('gameGrid').innerHTML = GAMES.map(g => {
+    var hotTag = g.hot ? '<span style="display:inline-block;background:#EF4444;color:#fff;font-size:9px;padding:1px 6px;border-radius:8px;margin-left:4px;vertical-align:middle;">热门</span>' : '';
+    return '<div class="game-card" onclick="startGame(\'' + g.id + '\')" style="border-top:3px solid ' + g.color + ';">' +
+      '<div class="game-icon">' + g.icon + '</div>' +
+      '<div class="game-name">' + g.name + hotTag + '</div>' +
+      '<div class="game-desc">' + g.desc + '</div>' +
+      '</div>';
+  }).join('');
 }
 
 // ==================== 游戏：抓大鹅 ====================
@@ -914,6 +917,8 @@ function startGame(gameId) {
 
   switch(gameId) {
     case 'pvz': gamePvz(data); break;
+    case 'whack': gameWhack(data); break;
+    case 'bubble': gameBubble(data); break;
     case 'goose': gameGoose(data); break;
     case 'match': gameMatch(data); break;
     case 'memory': gameMemory(data); break;
@@ -2153,6 +2158,348 @@ function gamePvz(data) {
     document.getElementById('totalStars').textContent = state.totalSunlight;
     document.querySelector('#modalContent').innerHTML = '<h2>🧟 游戏结束</h2><div style="text-align:center;font-size:48px;margin:16px 0;">'+(s>=20?'🏆':s>=8?'👍':'🧟')+'</div><div style="text-align:center;font-size:16px;">消灭 <strong>'+s+'</strong> 只僵尸 · 撑过 <strong>'+w+'</strong> 波</div><div style="text-align:center;color:var(--accent);margin:8px 0;font-size:16px;">+'+bonus+' ☀️ 阳光奖励</div><div style="text-align:center;font-size:12px;color:var(--text-light);">剩余阳光：'+Math.max(0,sunlight)+' ☀️</div><button class="btn btn-primary btn-block" style="margin-top:16px" onclick="closeModal()">再来一次</button>';
   }
+}
+
+// ==================== 游戏：打地鼠 ====================
+function gameWhack(data) {
+  var words = data.words.sort(function() { return Math.random() - 0.5; }).slice(0, 12);
+  var score = 0, miss = 0, maxMiss = 5, gameOver = false;
+  var currentWord = null, moleTimers = [];
+
+  var holesHTML = '';
+  for (var i = 0; i < 6; i++) {
+    holesHTML += '<div class="whack-hole" id="hole' + i + '" onclick="whackHit(' + i + ')" style="flex:0 0 30%;height:70px;background:#8B5E3C;border-radius:50% 50% 0 0;position:relative;overflow:hidden;margin:4px;cursor:pointer;">' +
+      '<div class="whack-mole" id="mole' + i + '" style="position:absolute;bottom:-60px;left:50%;transform:translateX(-50%);font-size:36px;transition:bottom 0.15s ease;z-index:1;">🐹</div>' +
+      '<div class="whack-word" id="moleWord' + i + '" style="position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:11px;background:#fff;color:#333;padding:1px 6px;border-radius:6px;white-space:nowrap;z-index:2;display:none;"></div>' +
+      '</div>';
+  }
+
+  var modal = showModal(
+    '<h2>🔨 打地鼠</h2>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px 12px;background:linear-gradient(135deg,#FFF7ED,#FED7AA);border-radius:var(--radius-sm);">' +
+    '<span>✅ <strong id="whackScore">0</strong></span>' +
+    '<span>❤️ <strong id="whackMiss">' + maxMiss + '</strong></span>' +
+    '<span>⏱️ <strong id="whackTimer">60</strong>s</span></div>' +
+    '<div style="text-align:center;font-size:14px;margin:8px 0;min-height:22px;" id="whackTarget">准备...</div>' +
+    '<div style="display:flex;flex-wrap:wrap;justify-content:center;gap:4px;background:#5D4037;border-radius:var(--radius);padding:8px;" id="whackArea">' + holesHTML + '</div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;min-height:42px;" id="whackOptions"></div>' +
+    '<button class="btn btn-outline btn-block btn-sm" style="margin-top:8px" onclick="closeModal()">退出</button>'
+  );
+
+  var targetWord = null;
+  var timeLeft = 60;
+  var activeMoles = {};
+
+  // 随机选目标单词
+  function pickTarget() {
+    var idx = Math.floor(Math.random() * words.length);
+    targetWord = words[idx];
+    document.getElementById('whackTarget').innerHTML = '🎯 找出：<strong style="color:#EF4444;">' + targetWord.zh + '</strong>';
+    updateOptions();
+    popMoles();
+  }
+
+  // 更新底部选项
+  function updateOptions() {
+    var opts = document.getElementById('whackOptions');
+    if (!opts) return;
+    // 生成选项：1个正确 + 3个干扰
+    var correct = targetWord.en;
+    var wrongs = words.filter(function(w) { return w.en !== correct; })
+      .sort(function() { return Math.random() - 0.5; }).slice(0, 3).map(function(w) { return w.en; });
+    var all = [correct].concat(wrongs).sort(function() { return Math.random() - 0.5; });
+
+    opts.innerHTML = all.map(function(o) {
+      return '<button class="btn btn-sm" style="background:' + (o === correct ? 'var(--success)' : 'var(--primary)') + ';color:#fff;font-size:13px;flex:0 0 auto;" onclick="whackChoose(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>';
+    }).join('');
+  }
+
+  // 地鼠冒出来
+  function popMoles() {
+    if (gameOver) return;
+    // 清除旧的地鼠
+    for (var h = 0; h < 6; h++) {
+      hideMole(h);
+    }
+    activeMoles = {};
+
+    // 随机2-4个洞冒出地鼠
+    var count = 2 + Math.floor(Math.random() * 3);
+    var usedHoles = [];
+    while (usedHoles.length < count) {
+      var hole = Math.floor(Math.random() * 6);
+      if (usedHoles.indexOf(hole) < 0) usedHoles.push(hole);
+    }
+
+    usedHoles.forEach(function(hole) {
+      showMole(hole);
+    });
+
+    // 1.5-2.5秒后换一轮
+    var delay = 1500 + Math.random() * 1000;
+    var timer = setTimeout(function() {
+      if (!gameOver) popMoles();
+    }, delay);
+    moleTimers.push(timer);
+  }
+
+  function showMole(hole) {
+    var mole = document.getElementById('mole' + hole);
+    var wordEl = document.getElementById('moleWord' + hole);
+    if (!mole || !wordEl) return;
+
+    // 随机选一个单词贴到地鼠上
+    var w = words[Math.floor(Math.random() * words.length)];
+    mole.style.bottom = '8px';
+    wordEl.textContent = w.en;
+    wordEl.style.display = 'block';
+    activeMoles[hole] = { word: w, alive: true };
+  }
+
+  function hideMole(hole) {
+    var mole = document.getElementById('mole' + hole);
+    var wordEl = document.getElementById('moleWord' + hole);
+    if (mole) mole.style.bottom = '-60px';
+    if (wordEl) wordEl.style.display = 'none';
+    activeMoles[hole] = null;
+  }
+
+  // 锤子敲地鼠
+  window.whackHit = function(hole) {
+    if (gameOver) return;
+    var moleData = activeMoles[hole];
+    if (!moleData || !moleData.alive) return;
+
+    moleData.alive = false;
+    hideMole(hole);
+
+    if (moleData.word.en === targetWord.en) {
+      score++;
+      document.getElementById('whackScore').textContent = score;
+      showToast('✅ 正确！', 800);
+      playKillSound();
+      pickTarget();
+    } else {
+      miss++;
+      document.getElementById('whackMiss').textContent = maxMiss - miss;
+      showToast('❌ 不对！❤️-' + (maxMiss - miss), 800);
+      playErrorSound();
+      if (miss >= maxMiss) {
+        endWhackGame();
+      }
+    }
+  };
+
+  // 底部选项点击
+  window.whackChoose = function(chosen) {
+    if (gameOver) return;
+    if (chosen === targetWord.en) {
+      score++;
+      document.getElementById('whackScore').textContent = score;
+      showToast('✅ 正确！', 800);
+      playKillSound();
+      pickTarget();
+    } else {
+      miss++;
+      document.getElementById('whackMiss').textContent = maxMiss - miss;
+      showToast('❌ 不对！❤️-' + (maxMiss - miss), 800);
+      playErrorSound();
+      if (miss >= maxMiss) {
+        endWhackGame();
+      }
+    }
+  };
+
+  // 倒计时
+  var timerInterval = setInterval(function() {
+    if (gameOver) { clearInterval(timerInterval); return; }
+    timeLeft--;
+    document.getElementById('whackTimer').textContent = timeLeft;
+    if (timeLeft <= 0) {
+      endWhackGame();
+    }
+  }, 1000);
+
+  function endWhackGame() {
+    gameOver = true;
+    clearInterval(timerInterval);
+    moleTimers.forEach(function(t) { clearTimeout(t); });
+    var bonus = score * 3;
+    state.totalSunlight += bonus;
+    saveState();
+    document.getElementById('totalStars').textContent = state.totalSunlight;
+    document.querySelector('#modalContent').innerHTML = '<h2>🔨 游戏结束</h2>' +
+      '<div style="text-align:center;font-size:48px;margin:16px 0;">' + (score >= 15 ? '🏆' : score >= 8 ? '👍' : '💪') + '</div>' +
+      '<div style="text-align:center;font-size:16px;">打中 <strong>' + score + '</strong> 只地鼠</div>' +
+      '<div style="text-align:center;color:var(--accent);margin:8px 0;font-size:16px;">+' + bonus + ' ☀️ 阳光奖励</div>' +
+      '<button class="btn btn-primary btn-block" style="margin-top:16px" onclick="closeModal()">再来一次</button>';
+  }
+
+  pickTarget();
+}
+
+// ==================== 游戏：泡泡龙 ====================
+function gameBubble(data) {
+  var words = data.words.sort(function() { return Math.random() - 0.5; }).slice(0, 10);
+  var score = 0, miss = 0, maxMiss = 5, gameOver = false;
+  var bubbles = [], bubbleId = 0, spawnInterval, gameLoop;
+
+  var modal = showModal(
+    '<h2>🫧 单词泡泡龙</h2>' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px 12px;background:linear-gradient(135deg,#EFF6FF,#BFDBFE);border-radius:var(--radius-sm);">' +
+    '<span>✅ <strong id="bubScore">0</strong></span>' +
+    '<span>❤️ <strong id="bubMiss">' + maxMiss + '</strong></span>' +
+    '<span>⏱️ <strong id="bubTimer">60</strong>s</span></div>' +
+    '<div style="text-align:center;font-size:14px;margin:8px 0;min-height:22px;" id="bubTarget">准备...</div>' +
+    '<div style="position:relative;height:300px;background:linear-gradient(180deg,#1E3A5F,#0F172A);border-radius:var(--radius);overflow:hidden;" id="bubArea"></div>' +
+    '<div style="display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px;min-height:42px;" id="bubOptions"></div>' +
+    '<button class="btn btn-outline btn-block btn-sm" style="margin-top:8px" onclick="closeModal()">退出</button>'
+  );
+
+  var targetWord = null;
+  var timeLeft = 60;
+  var bubbleColors = ['#EF4444', '#3B82F6', '#22C55E', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#F97316'];
+
+  function pickTarget() {
+    var idx = Math.floor(Math.random() * words.length);
+    targetWord = words[idx];
+    document.getElementById('bubTarget').innerHTML = '🎯 点破：<strong style="color:#3B82F6;">' + targetWord.zh + '</strong> 对应的英语泡泡';
+    updateOptions();
+  }
+
+  function updateOptions() {
+    var opts = document.getElementById('bubOptions');
+    if (!opts) return;
+    var correct = targetWord.en;
+    var wrongs = words.filter(function(w) { return w.en !== correct; })
+      .sort(function() { return Math.random() - 0.5; }).slice(0, 3).map(function(w) { return w.en; });
+    var all = [correct].concat(wrongs).sort(function() { return Math.random() - 0.5; });
+
+    opts.innerHTML = all.map(function(o) {
+      return '<button class="btn btn-sm" style="background:' + (o === correct ? 'var(--success)' : 'var(--primary)') + ';color:#fff;font-size:13px;flex:0 0 auto;" onclick="bubChoose(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>';
+    }).join('');
+  }
+
+  function spawnBubble() {
+    if (gameOver) return;
+    var id = ++bubbleId;
+    var w = words[Math.floor(Math.random() * words.length)];
+    var size = 50 + Math.random() * 30;
+    var left = 5 + Math.random() * 70;
+    var color = bubbleColors[Math.floor(Math.random() * bubbleColors.length)];
+    var duration = 6 + Math.random() * 4;
+
+    var el = document.createElement('div');
+    el.id = 'bub' + id;
+    el.style.cssText = 'position:absolute;bottom:-60px;left:' + left + '%;width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:radial-gradient(circle at 30% 30%, ' + color + ', ' + color + '88);display:flex;align-items:center;justify-content:center;font-size:' + (size > 65 ? '12' : '10') + 'px;color:#fff;font-weight:700;cursor:pointer;z-index:1;box-shadow:inset 0 0 10px rgba(255,255,255,0.4);animation:bubFloat ' + duration + 's linear forwards;text-align:center;word-break:break-all;padding:4px;box-sizing:border-box;';
+    el.textContent = w.en;
+    el.setAttribute('onclick', 'bubPop(' + id + ')');
+    document.getElementById('bubArea').appendChild(el);
+
+    var bObj = { id: id, el: el, word: w, alive: true };
+    bubbles.push(bObj);
+
+    // 泡泡飘到顶部消失 = miss
+    setTimeout(function() {
+      if (bObj.alive && !gameOver) {
+        bObj.alive = false;
+        bObj.el.remove();
+        miss++;
+        document.getElementById('bubMiss').textContent = maxMiss - miss;
+        if (miss >= maxMiss) endBubGame();
+      }
+    }, duration * 1000);
+  }
+
+  window.bubPop = function(id) {
+    if (gameOver) return;
+    var b = bubbles.find(function(x) { return x.id === id && x.alive; });
+    if (!b) return;
+    b.alive = false;
+    b.el.style.transform = 'scale(1.5)';
+    b.el.style.opacity = '0';
+    b.el.style.transition = 'all 0.2s';
+    setTimeout(function() { if (b.el.parentNode) b.el.remove(); }, 200);
+
+    if (b.word.en === targetWord.en) {
+      score++;
+      document.getElementById('bubScore').textContent = score;
+      showToast('✅ 正确！', 800);
+      playKillSound();
+      pickTarget();
+    } else {
+      miss++;
+      document.getElementById('bubMiss').textContent = maxMiss - miss;
+      showToast('❌ 不对！', 800);
+      playErrorSound();
+      if (miss >= maxMiss) endBubGame();
+    }
+  };
+
+  window.bubChoose = function(chosen) {
+    if (gameOver) return;
+    if (chosen === targetWord.en) {
+      score++;
+      document.getElementById('bubScore').textContent = score;
+      showToast('✅ 正确！', 800);
+      playKillSound();
+      pickTarget();
+    } else {
+      miss++;
+      document.getElementById('bubMiss').textContent = maxMiss - miss;
+      showToast('❌ 不对！', 800);
+      playErrorSound();
+      if (miss >= maxMiss) endBubGame();
+    }
+  };
+
+  // 每0.8秒生成一个泡泡
+  spawnInterval = setInterval(function() {
+    if (!gameOver) spawnBubble();
+  }, 800);
+
+  // 清理离开屏幕的泡泡
+  gameLoop = setInterval(function() {
+    if (gameOver) return;
+    bubbles.forEach(function(b) {
+      if (!b.alive || !b.el.parentNode) return;
+      var rect = b.el.getBoundingClientRect();
+      var ar = document.getElementById('bubArea');
+      if (!ar) return;
+      var arRect = ar.getBoundingClientRect();
+      if (rect.bottom < arRect.top + 10) {
+        b.alive = false;
+        b.el.remove();
+      }
+    });
+  }, 500);
+
+  // 倒计时
+  var timerInterval = setInterval(function() {
+    if (gameOver) { clearInterval(timerInterval); return; }
+    timeLeft--;
+    document.getElementById('bubTimer').textContent = timeLeft;
+    if (timeLeft <= 0) endBubGame();
+  }, 1000);
+
+  function endBubGame() {
+    gameOver = true;
+    clearInterval(spawnInterval);
+    clearInterval(gameLoop);
+    clearInterval(timerInterval);
+    bubbles.forEach(function(b) { if (b.el.parentNode) b.el.remove(); });
+    var bonus = score * 3;
+    state.totalSunlight += bonus;
+    saveState();
+    document.getElementById('totalStars').textContent = state.totalSunlight;
+    document.querySelector('#modalContent').innerHTML = '<h2>🫧 游戏结束</h2>' +
+      '<div style="text-align:center;font-size:48px;margin:16px 0;">' + (score >= 15 ? '🏆' : score >= 8 ? '👍' : '💪') + '</div>' +
+      '<div style="text-align:center;font-size:16px;">点破 <strong>' + score + '</strong> 个泡泡</div>' +
+      '<div style="text-align:center;color:var(--accent);margin:8px 0;font-size:16px;">+' + bonus + ' ☀️ 阳光奖励</div>' +
+      '<button class="btn btn-primary btn-block" style="margin-top:16px" onclick="closeModal()">再来一次</button>';
+  }
+
+  pickTarget();
 }
 
 function init() {

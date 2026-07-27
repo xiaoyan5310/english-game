@@ -416,6 +416,7 @@ body {
 .pvz-word{position:absolute;font-size:11px;font-weight:700;background:#fff;color:#333;padding:2px 6px;border-radius:4px;top:-20px;left:50%;transform:translateX(-50%);white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
 .pvz-options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
 @keyframes pvzWalk{0%{right:-60px}100%{right:calc(100% + 60px)}}
+@keyframes bubFloat{0%{bottom:-60px;opacity:0}10%{opacity:1}90%{opacity:1}100%{bottom:105%;opacity:0}}
 
 /* 句子排序 */
 .sort-word{padding:8px 14px;background:var(--primary);color:#fff;border-radius:20px;font-size:14px;font-weight:600;cursor:pointer;transition:all .15s}.sort-word:active{transform:scale(.95)}
