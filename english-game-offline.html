@@ -2796,7 +2796,7 @@ function gamePvz(data) {
   var zombies = [], plants = [], gameLoop, sunLoop, plantAttackLoop, spawnTimer;
   var lanes = 5;
   var WAVE_PAUSE = false;  // 波间暂停标志
-  var WAVE_PAUSE_TIME = 5000; // 波间暂停5秒
+  var WAVE_PAUSE_TIME = 3000; // 波间暂停3秒
 
   // 植物商店
   var PLANT_SHOP = [
@@ -2977,7 +2977,7 @@ function gamePvz(data) {
     WAVE_PAUSE = false;
     document.getElementById('pvzWave').textContent = wave;
 
-    var count = Math.min(2 + Math.floor(wave / 2), 5); // 每波2~5只
+    var count = Math.min(3 + Math.floor(wave / 2), 5); // 每波3~5只（提高了起始数量）
     var usedLanes = {};
 
     for (var i = 0; i < count; i++) {
@@ -2992,7 +2992,7 @@ function gamePvz(data) {
           } while (usedLanes[lane] && tries < 5);
           usedLanes[lane] = true;
           spawnZombieOnLane(lane);
-        }, idx * 600); // 每0.6秒出一个，紧凑一波
+        }, idx * 800); // 每0.8秒出一个，不同行几乎同时
       })(i);
     }
 
@@ -3001,12 +3001,12 @@ function gamePvz(data) {
     updateSunDisplay();
     document.getElementById('pvzInfo').textContent = '🌊 第' + wave + '波来袭！(' + count + '只僵尸) +' + wb + '☀️';
 
-    // 波结束后暂停，给你时间买植物
-    var waveDuration = 8000 + count * 2000; // 给每只僵尸一些行走时间
+    // 波结束后暂停3秒，给你时间买植物
+    var waveDuration = 5000 + count * 1000; // 缩短波内间隔，下一波更快来
     spawnTimer = setTimeout(function() {
       if (gameOver) return;
       WAVE_PAUSE = true;
-      document.getElementById('pvzInfo').textContent = '⏸️ 休息中…快用阳光买植物吧！下一波即将到来~';
+      document.getElementById('pvzInfo').textContent = '⏸️ 休息3秒…快用阳光买��物！';
       // 暂停后3秒出下一波
       spawnTimer = setTimeout(function() {
         if (gameOver) return;
