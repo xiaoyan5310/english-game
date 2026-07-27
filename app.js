@@ -1606,17 +1606,19 @@ function gamePvz(data) {
   if (words.length < 3) { alert('需要至少3个单词！'); return; }
 
   var wave = 0, score = 0, gameOver = false, paused = false;
-  var zombies = [], plants = [], gameLoop, sunLoop;
+  var zombies = [], plants = [], gameLoop, sunLoop, plantAttackLoop, spawnTimer;
   var lanes = 5;
+  var WAVE_PAUSE = false;  // 波间暂停标志
+  var WAVE_PAUSE_TIME = 5000; // 波间暂停5秒
 
-  // 植物商店 — 最初版价格
+  // 植物商店
   var PLANT_SHOP = [
-    { id:'sunflower', name:'向日葵', icon:'🌻', cost:50, hp:1, sunGen:true, desc:'自动产阳光' },
-    { id:'peashooter', name:'豌豆射手', icon:'🌿', cost:100, hp:2, attack:true, desc:'攻击僵尸' },
-    { id:'wallnut', name:'坚果墙', icon:'🥜', cost:80, hp:4, desc:'高血量' },
-    { id:'snowpea', name:'寒冰射手', icon:'❄️', cost:150, hp:2, attack:true, slow:true, desc:'减速+攻击' },
-    { id:'cherry', name:'樱桃炸弹', icon:'💣', cost:200, hp:1, bomb:true, desc:'炸一行' },
-    { id:'chomper', name:'大嘴花', icon:'🌺', cost:250, hp:3, chomp:true, desc:'一口吞僵尸' },
+    { id:'sunflower', name:'向日葵', icon:'🌻', cost:50, hp:2, sunGen:true, attack:false, atkSpeed:0, desc:'自动产阳光' },
+    { id:'peashooter', name:'豌豆射手', icon:'🌿', cost:100, hp:3, attack:true, atkSpeed:2500, dmg:1, desc:'自动攻击僵尸' },
+    { id:'wallnut', name:'坚果墙', icon:'🥜', cost:80, hp:8, attack:false, atkSpeed:0, desc:'高血量阻挡' },
+    { id:'snowpea', name:'寒冰射手', icon:'❄️', cost:150, hp:3, attack:true, atkSpeed:2500, slow:true, dmg:1, desc:'减速+攻击' },
+    { id:'cherry', name:'樱桃炸弹', icon:'💣', cost:200, hp:1, attack:false, bomb:true, desc:'炸一行' },
+    { id:'chomper', name:'大嘴花', icon:'🌺', cost:250, hp:5, attack:true, atkSpeed:5000, chomp:true, dmg:99, desc:'一口吞僵尸' },
   ];
 
   var laneHTML = '';
@@ -1627,11 +1629,11 @@ function gamePvz(data) {
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:8px 12px;background:linear-gradient(135deg,#FEF3C7,#FDE68A);border-radius:var(--radius-sm);">' +
     '<span>☀️ <strong id="pvzSun">'+sunlight+'</strong></span>' +
     '<span>🧟 <strong id="pvzScore">0</strong></span>' +
-    '<span>🌊 <strong id="pvzWave">1</strong></span></div>' +
-    '<div class="pvz-area" id="pvzArea">'+laneHTML+'</div>' +
-    '<div style="margin:4px 0;font-size:11px;color:var(--text-light);text-align:center;" id="pvzInfo">💡 先买植物 → 点草坪种植 → 选中文消灭僵尸！</div>' +
-    '<div style="display:flex;gap:4px;overflow-x:auto;padding:4px 0;margin-bottom:4px;" id="pvzShop"></div>' +
-    '<div class="pvz-options" id="pvzOptions"></div>' +
+    '<span>🌊 <strong id="pvzWave">0</strong></span></div>' +
+    '<div class="pvz-area" id="pvzArea" style="min-height:280px;">'+laneHTML+'</div>' +
+    '<div style="margin:4px 0;font-size:11px;color:var(--text-light);text-align:center;min-height:18px;" id="pvzInfo">💡 先买植物 → 点草坪种植 → 植物会自动攻击僵尸！</div>' +
+    '<div style="display:flex;gap:4px;overflow-x:auto;padding:4px 0;margin-bottom:4px;min-height:50px;" id="pvzShop"></div>' +
+    '<div class="pvz-options" id="pvzOptions" style="min-height:42px;"></div>' +
     '<button class="btn btn-outline btn-block btn-sm" style="margin-top:4px" onclick="closeModal()">退出</button>'
   );
 
@@ -1689,8 +1691,9 @@ function gamePvz(data) {
     plants.push({
       el:pe, lane:lane, hp:selectedPlant.hp, maxHp:selectedPlant.hp,
       sunGen:selectedPlant.sunGen||false, attack:selectedPlant.attack||false,
+      atkSpeed:selectedPlant.atkSpeed||0, dmg:selectedPlant.dmg||0,
       slow:selectedPlant.slow||false, bomb:selectedPlant.bomb||false,
-      chomp:selectedPlant.chomp||false,
+      chomp:selectedPlant.chomp||false, lastAttack:0,
       icon:selectedPlant.icon, name:selectedPlant.name
     });
     document.getElementById('pvzInfo').textContent = '✅ '+selectedPlant.icon+' 种在第'+(lane+1)+'行！';
@@ -1715,7 +1718,7 @@ function gamePvz(data) {
     var w = available[Math.floor(Math.random() * available.length)];
 
     var lane = Math.floor(Math.random() * lanes);
-    var spd = 10 + Math.random() * 6;
+    var spd = 15 + Math.random() * 4; // 15-19秒走完（比之前慢，给植物攻击时间）
     var uid = ++zombieUid;
 
     var zombie = document.createElement('div');
@@ -1738,7 +1741,7 @@ function gamePvz(data) {
     var le = document.getElementById('pvzLane' + lane);
     if (le) le.appendChild(zombie);
 
-    var zObj = { uid: uid, el: zombie, lane: lane, word: w.en, answer: w.zh, spd: spd, alive: true, hp: 1 };
+    var zObj = { uid: uid, el: zombie, lane: lane, word: w.en, answer: w.zh, spd: spd, alive: true, hp: 2, maxHp: 2 };
     zombies.push(zObj);
     activeWords[w.en] = w.zh;
     updateOptions();
@@ -1751,7 +1754,7 @@ function gamePvz(data) {
     var available = words.filter(function(w) { return !activeWords[w.en]; });
     if (available.length === 0) available = words;
     var w = available[Math.floor(Math.random() * available.length)];
-    var spd = 10 + Math.random() * 6;
+    var spd = 15 + Math.random() * 4;
     var uid = ++zombieUid;
 
     var zombie = document.createElement('div');
@@ -1774,13 +1777,81 @@ function gamePvz(data) {
     var le = document.getElementById('pvzLane' + lane);
     if (le) le.appendChild(zombie);
 
-    var zObj = { uid: uid, el: zombie, lane: lane, word: w.en, answer: w.zh, spd: spd, alive: true, hp: 1 };
+    var zObj = { uid: uid, el: zombie, lane: lane, word: w.en, answer: w.zh, spd: spd, alive: true, hp: 2, maxHp: 2 };
     zombies.push(zObj);
     activeWords[w.en] = w.zh;
     updateOptions();
   }
 
-  // 底部选项：严格对应场上存活僵尸的中文意思
+  // ============ 波次系统：一波集中出，波间暂停 ============
+  function startWave() {
+    if (gameOver) return;
+    wave++;
+    WAVE_PAUSE = false;
+    document.getElementById('pvzWave').textContent = wave;
+
+    var count = Math.min(2 + Math.floor(wave / 2), 5); // 每波2~5只
+    var usedLanes = {};
+
+    for (var i = 0; i < count; i++) {
+      (function(idx) {
+        setTimeout(function() {
+          if (gameOver) return;
+          var lane;
+          var tries = 0;
+          do {
+            lane = Math.floor(Math.random() * lanes);
+            tries++;
+          } while (usedLanes[lane] && tries < 5);
+          usedLanes[lane] = true;
+          spawnZombieOnLane(lane);
+        }, idx * 600); // 每0.6秒出一个，紧凑一波
+      })(i);
+    }
+
+    var wb = wave * 3;
+    sunlight += wb;
+    updateSunDisplay();
+    document.getElementById('pvzInfo').textContent = '🌊 第' + wave + '波来袭！(' + count + '只僵尸) +' + wb + '☀️';
+
+    // 波结束后暂停，给你时间买植物
+    var waveDuration = 8000 + count * 2000; // 给每只僵尸一些行走时间
+    spawnTimer = setTimeout(function() {
+      if (gameOver) return;
+      WAVE_PAUSE = true;
+      document.getElementById('pvzInfo').textContent = '⏸️ 休息中…快用阳光买植物吧！下一波即将到来~';
+      // 暂停后3秒出下一波
+      spawnTimer = setTimeout(function() {
+        if (gameOver) return;
+        startWave();
+      }, WAVE_PAUSE_TIME);
+    }, waveDuration);
+  }
+
+  // 初始赠送2棵向日葵
+  var sf = PLANT_SHOP[0];
+  if (sunlight >= sf.cost) {
+    sunlight -= sf.cost;
+    for (var i=0; i<Math.min(2,lanes); i++) {
+      var le = document.getElementById('pvzLane'+i);
+      if (le) {
+        var pe = document.createElement('div');
+        pe.className='pvz-plant'; pe.textContent='🌻'; pe.style.left='8%'; pe.style.fontSize='30px';
+        le.appendChild(pe);
+        plants.push({el:pe,lane:i,hp:2,maxHp:2,sunGen:true,attack:false,atkSpeed:0,dmg:0,slow:false,bomb:false,chomp:false,lastAttack:0,icon:'🌻',name:'向日葵'});
+      }
+    }
+    updateSunDisplay();
+  }
+
+  // 初始第一波延迟3秒，给时间准备
+  spawnTimer = setTimeout(function() {
+    startWave();
+  }, 3000);
+
+  renderShop();
+
+  // 底部选项：严格对应场上存活僵尸的中文意思（平滑更新，不跳动）
   function updateOptions() {
     var oe = document.getElementById('pvzOptions');
     if (!oe) return;
@@ -1795,14 +1866,40 @@ function gamePvz(data) {
     // 干扰选项：从单词表里取和正确答案不同的
     var wrongs = words.filter(function(w) { return correctAnswers.indexOf(w.zh) < 0; })
       .sort(function() { return Math.random() - 0.5; })
-      .slice(0, Math.max(0, 5 - correctAnswers.length));
+      .slice(0, Math.max(0, 6 - correctAnswers.length));
 
     var allOptions = correctAnswers.concat(wrongs.map(function(w) { return w.zh; }))
       .sort(function() { return Math.random() - 0.5; });
 
-    oe.innerHTML = allOptions.map(function(o) {
-      return '<button class="btn btn-primary btn-sm" onclick="pvzAttack(\'' + o.replace(/'/g, "\\'") + '\')">' + o + '</button>';
-    }).join('');
+    // 平滑更新：不替换整个 HTML，逐个更新按钮
+    var existingBtns = oe.querySelectorAll('button');
+    var targetCount = allOptions.length;
+    var existingCount = existingBtns.length;
+
+    // 移除多余的按钮
+    for (var i = existingCount - 1; i >= targetCount; i--) {
+      existingBtns[i].remove();
+    }
+
+    // 更新或创建按钮
+    for (var i = 0; i < targetCount; i++) {
+      var txt = allOptions[i];
+      if (i < existingCount) {
+        // 更新已有按钮
+        var btn = existingBtns[i];
+        if (btn.textContent !== txt) {
+          btn.textContent = txt;
+          btn.setAttribute('onclick', "pvzAttack('" + txt.replace(/'/g, "\\'") + "')");
+        }
+      } else {
+        // 创建新按钮
+        var newBtn = document.createElement('button');
+        newBtn.className = 'btn btn-primary btn-sm';
+        newBtn.textContent = txt;
+        newBtn.setAttribute('onclick', "pvzAttack('" + txt.replace(/'/g, "\\'") + "')");
+        oe.appendChild(newBtn);
+      }
+    }
   }
 
   // 攻击：点击中文选项消灭对应僵尸
@@ -1831,7 +1928,8 @@ function gamePvz(data) {
       });
     }
 
-    z.hp--;
+    // 玩家答题直接造成2点伤害（相当于豌豆打两次），基本一击必杀
+    z.hp -= 2;
     var bonus = 5;
     var lp = plants.find(function(p) { return p.lane === z.lane && p.hp > 0; });
 
@@ -1864,7 +1962,14 @@ function gamePvz(data) {
         score++;
         if (lp && lp.attack) {
           document.getElementById('pvzInfo').textContent = '✅ ' + lp.icon + ' 发射！+' + bonus + '☀️';
+        } else {
+          document.getElementById('pvzInfo').textContent = '✅ 消灭僵尸！+' + bonus + '☀️';
         }
+      } else {
+        // 僵尸受伤但没死
+        z.el.style.animation = 'shake 0.2s ease';
+        setTimeout(function() { z.el.style.animation = 'pvzWalk ' + z.spd + 's linear forwards'; }, 200);
+        document.getElementById('pvzInfo').textContent = '💢 僵尸受伤了！再打一次！（剩' + z.hp + '血）';
       }
     }
 
@@ -1887,7 +1992,83 @@ function gamePvz(data) {
     });
   }, 8000);
 
-  // 主循环：僵尸移动检测
+  // ============ 植物自动攻击系统 ============
+  plantAttackLoop = setInterval(function() {
+    if (gameOver || WAVE_PAUSE) return;
+
+    plants.forEach(function(p) {
+      if (!p.attack || p.hp <= 0) return; // 只处理攻击型植物
+
+      // 找同行最靠左的存活僵尸
+      var target = null;
+      zombies.forEach(function(z) {
+        if (!z.alive || z.lane !== p.lane) return;
+        if (!target) { target = z; return; }
+        var tr = target.el.getBoundingClientRect();
+        var zr = z.el.getBoundingClientRect();
+        if (zr.right > tr.right) target = z; // 最靠左（right最小=走最远）
+      });
+
+      if (!target) return; // 同行没僵尸
+
+      // 检查冷却时间
+      var now = Date.now();
+      if (now - p.lastAttack < p.atkSpeed) return;
+      p.lastAttack = now;
+
+      // 发射子弹动画
+      shootBullet(p, target);
+
+      // 造成伤害
+      target.hp -= p.dmg;
+
+      if (target.hp <= 0) {
+        // 植物打死僵尸
+        target.alive = false;
+        delete activeWords[target.word];
+        target.el.style.transform = 'scale(0)';
+        target.el.style.opacity = '0';
+        target.el.style.transition = 'all 0.3s';
+        setTimeout(function() { if (target.el.parentNode) target.el.remove(); }, 300);
+        score++;
+        sunlight += 3;
+        updateSunDisplay();
+        document.getElementById('pvzScore').textContent = score;
+        updateOptions();
+        playKillSound();
+        document.getElementById('pvzInfo').textContent = '🔫 ' + p.icon + ' ' + p.name + ' 消灭僵尸！+3☀️';
+      }
+    });
+  }, 400);
+
+  // 子弹动画
+  function shootBullet(plant, zombie) {
+    var area = document.getElementById('pvzArea');
+    if (!area) return;
+    var pr = plant.el.getBoundingClientRect();
+    var ar = area.getBoundingClientRect();
+
+    var bullet = document.createElement('div');
+    bullet.style.cssText = 'position:fixed;font-size:14px;z-index:999;pointer-events:none;transition:all 0.5s linear;';
+    bullet.textContent = '🟢';
+    bullet.style.left = (pr.left + pr.width / 2) + 'px';
+    bullet.style.top = (pr.top + pr.height / 2 - 7) + 'px';
+    document.body.appendChild(bullet);
+
+    // 目标位置
+    var zr = zombie.el.getBoundingClientRect();
+    requestAnimationFrame(function() {
+      bullet.style.left = (zr.left + zr.width / 2) + 'px';
+      bullet.style.top = (zr.top + zr.height / 2 - 7) + 'px';
+    });
+
+    // 命中后消失
+    setTimeout(function() {
+      if (bullet.parentNode) bullet.remove();
+    }, 550);
+  }
+
+  // 主循环：僵尸移动检测 + 啃植物
   gameLoop = setInterval(function() {
     if (gameOver) return;
     zombies.forEach(function(z) {
@@ -1898,32 +2079,48 @@ function gamePvz(data) {
       var arRect = ar.getBoundingClientRect();
       var prog = (rect.right - arRect.left) / arRect.width;
 
-      // 寒冰减速
+      // 寒冰减速（只在第一次接触时触发）
       var lp = plants.find(function(p){return p.lane===z.lane && p.hp>0;});
       if (lp && lp.slow && !z._slowed) {
         z._slowed = true;
-        z.el.style.animationDuration = (parseFloat(z.el.style.animationDuration)*1.8)+'s';
+        z.el.style.animationDuration = (parseFloat(z.el.style.animationDuration)*2)+'s';
+        z.spd = z.spd * 2;
       }
 
-      // 僵尸到达植物位置 → 啃植物
-      if (prog < 0.3 && lp && lp.hp > 0) {
-        lp.hp--;
-        if (lp.hp <= 0) {
-          lp.el.style.opacity='0';
-          setTimeout(function(){if(lp.el.parentNode)lp.el.remove();},300);
-          document.getElementById('pvzInfo').textContent = '💀 '+lp.name+' 被吃掉了！';
-        } else {
-          document.getElementById('pvzInfo').textContent = '🦷 僵尸在啃 '+lp.name+'...（剩'+lp.hp+'血）';
-        }
+      // 僵尸到达植物位置 → 啃植物（慢慢啃）
+      if (prog < 0.35 && lp && lp.hp > 0 && !z._eating) {
+        z._eating = true;
+        z.el.style.animationPlayState = 'paused';
+        // 每1.5秒啃一次
+        z._eatTimer = setInterval(function() {
+          if (gameOver || !z.alive || !lp || lp.hp <= 0) {
+            clearInterval(z._eatTimer);
+            if (z.alive) z.el.style.animationPlayState = 'running';
+            return;
+          }
+          lp.hp--;
+          if (lp.hp <= 0) {
+            lp.el.style.opacity='0';
+            setTimeout(function(){if(lp.el.parentNode)lp.el.remove();},300);
+            document.getElementById('pvzInfo').textContent = '💀 '+lp.name+' 被吃掉了！';
+            // 植物被吃后僵尸继续走
+            if (z.alive) z.el.style.animationPlayState = 'running';
+            z._eating = false;
+            clearInterval(z._eatTimer);
+          } else {
+            document.getElementById('pvzInfo').textContent = '🦷 僵尸在啃 '+lp.name+'...（剩'+lp.hp+'血）';
+          }
+        }, 1500);
       }
 
-      // 僵尸突破防线
+      // 僵尸突破防线（走到最左边）
       if (prog < 0.08) {
         if (!gameOver) {
           sunlight = Math.max(0, sunlight - 10);
           updateSunDisplay();
           z.alive = false;
           delete activeWords[z.word];
+          if (z._eatTimer) clearInterval(z._eatTimer);
           z.el.style.transform='scale(0)'; z.el.style.opacity='0';
           z.el.style.transition='all 0.3s';
           setTimeout(function(){if(z.el.parentNode)z.el.remove();},300);
@@ -1933,6 +2130,8 @@ function gamePvz(data) {
             gameOver = true;
             clearInterval(gameLoop);
             clearInterval(sunLoop);
+            clearInterval(plantAttackLoop);
+            clearTimeout(spawnTimer);
             endPvzGame(score, wave);
           }
         }
@@ -1940,55 +2139,13 @@ function gamePvz(data) {
     });
   }, 400);
 
-  // 定时生成僵尸：同时多行出，间隔短，一波接一波
-  var spawnInterval = setInterval(function() {
-    if (gameOver) return;
-    wave++;
-    document.getElementById('pvzWave').textContent = wave;
-    // 每波同时在不同行生成僵尸（至少2行同时出）
-    var count = Math.min(2+Math.floor(wave/2), 5); // 2~5只
-    var usedLanes = {};
-    for (var i=0; i<count; i++) {
-      (function(idx) {
-        setTimeout(function() {
-          // 尽量选不同行
-          var lane;
-          var tries = 0;
-          do {
-            lane = Math.floor(Math.random()*lanes);
-            tries++;
-          } while (usedLanes[lane] && tries < 5);
-          usedLanes[lane] = true;
-          // 直接在指定行生成僵尸（不通过spawnZombie随机选行）
-          spawnZombieOnLane(lane);
-        }, idx * 800); // 每0.8秒出一个，不同行几乎同时
-      })(i);
-    }
-    var wb = wave*3;
-    sunlight += wb;
-    updateSunDisplay();
-    document.getElementById('pvzInfo').textContent = '🌊 第'+wave+'波！+'+wb+'☀️';
-  }, 10000); // 每10秒一波（更快更紧凑）
-
-  // 初始赠送2棵向日葵（最初版逻辑）
-  var sf = PLANT_SHOP[0];
-  if (sunlight >= sf.cost) {
-    sunlight -= sf.cost;
-    for (var i=0; i<Math.min(2,lanes); i++) {
-      var le = document.getElementById('pvzLane'+i);
-      if (le) {
-        var pe = document.createElement('div');
-        pe.className='pvz-plant'; pe.textContent='🌻'; pe.style.left='8%'; pe.style.fontSize='30px';
-        le.appendChild(pe);
-        plants.push({el:pe,lane:i,hp:1,maxHp:1,sunGen:true,attack:false,slow:false,bomb:false,chomp:false,icon:'🌻',name:'向日葵'});
-      }
-    }
-    updateSunDisplay();
-  }
-  spawnZombie();
-  renderShop();
-
   function endPvzGame(s,w) {
+    clearInterval(gameLoop);
+    clearInterval(sunLoop);
+    clearInterval(plantAttackLoop);
+    clearTimeout(spawnTimer);
+    // 清理所有僵尸啃咬定时器
+    zombies.forEach(function(z) { if (z._eatTimer) clearInterval(z._eatTimer); });
     var bonus = s*2;
     state.totalSunlight += bonus;
     state.pvzSunlight = Math.max(0,sunlight);
