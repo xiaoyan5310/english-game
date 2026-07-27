@@ -3039,7 +3039,7 @@ function gamePvz(data) {
     '<div class="pvz-area" id="pvzArea" style="min-height:280px;">'+laneHTML+'</div>' +
     '<div style="margin:4px 0;font-size:11px;color:var(--text-light);text-align:center;min-height:18px;" id="pvzInfo">💡 先买植物 → 点草坪种植 → 植物会自动攻击僵尸！</div>' +
     '<div style="display:flex;gap:4px;overflow-x:auto;padding:4px 0;margin-bottom:4px;min-height:50px;" id="pvzShop"></div>' +
-    '<div class="pvz-options" id="pvzOptions" style="min-height:42px;"></div>' +
+    '<div class="pvz-options" id="pvzOptions" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;min-height:44px;"></div>' +
     '<button class="btn btn-outline btn-block btn-sm" style="margin-top:4px" onclick="closeModal()">退出</button>'
   );
 
@@ -3277,33 +3277,35 @@ function gamePvz(data) {
     var allOptions = correctAnswers.concat(wrongs.map(function(w) { return w.zh; }))
       .sort(function() { return Math.random() - 0.5; });
 
-    // 平滑更新：不替换整个 HTML，逐个更新按钮
+    // 固定6个按钮，永不增删，只更新内容，完全无跳动
+    var FIXED_COUNT = 6;
     var existingBtns = oe.querySelectorAll('button');
-    var targetCount = allOptions.length;
-    var existingCount = existingBtns.length;
 
-    // 移除多余的按钮
-    for (var i = existingCount - 1; i >= targetCount; i--) {
-      existingBtns[i].remove();
+    // 第一次初始化：创建6个固定按钮
+    if (existingBtns.length < FIXED_COUNT) {
+      oe.innerHTML = '';
+      for (var i = 0; i < FIXED_COUNT; i++) {
+        var btn = document.createElement('button');
+        btn.className = 'btn btn-primary btn-sm';
+        btn.style.cssText = 'flex:0 0 calc(33% - 4px);min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+        oe.appendChild(btn);
+      }
+      existingBtns = oe.querySelectorAll('button');
     }
 
-    // 更新或创建按钮
-    for (var i = 0; i < targetCount; i++) {
-      var txt = allOptions[i];
-      if (i < existingCount) {
-        // 更新已有按钮
-        var btn = existingBtns[i];
-        if (btn.textContent !== txt) {
-          btn.textContent = txt;
+    // 更新每个按钮的内容
+    for (var i = 0; i < FIXED_COUNT; i++) {
+      var btn = existingBtns[i];
+      var txt = (i < allOptions.length) ? allOptions[i] : '';
+      if (btn.textContent !== txt) {
+        btn.textContent = txt;
+        if (txt) {
           btn.setAttribute('onclick', "pvzAttack('" + txt.replace(/'/g, "\\'") + "')");
+          btn.style.visibility = 'visible';
+        } else {
+          btn.removeAttribute('onclick');
+          btn.style.visibility = 'hidden'; // 隐藏但不占位变，用 visibility 不影响布局
         }
-      } else {
-        // 创建新按钮
-        var newBtn = document.createElement('button');
-        newBtn.className = 'btn btn-primary btn-sm';
-        newBtn.textContent = txt;
-        newBtn.setAttribute('onclick', "pvzAttack('" + txt.replace(/'/g, "\\'") + "')");
-        oe.appendChild(newBtn);
       }
     }
   }
