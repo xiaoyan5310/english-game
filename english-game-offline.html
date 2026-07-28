@@ -3020,7 +3020,7 @@ function gamePvz(data) {
   var zombies = [], plants = [], gameLoop, sunLoop, plantAttackLoop, spawnTimer;
   var lanes = 5;
   var WAVE_PAUSE = false;  // 波间暂停标志
-  var WAVE_PAUSE_TIME = 4000; // 波间暂停4秒
+  var WAVE_PAUSE_TIME = 3500; // 波间暂停3.5秒
 
   // 植物商店
   var PLANT_SHOP = [
@@ -3180,12 +3180,6 @@ function gamePvz(data) {
     wl.textContent = w.en;
     zombie.appendChild(wl);
 
-    // 汉语意思标签
-    var zhL = document.createElement('div');
-    zhL.className = 'pvz-zh';
-    zhL.textContent = w.zh;
-    zombie.appendChild(zhL);
-
     // 僵尸emoji图标
     var icon = document.createElement('div');
     icon.className = 'pvz-zombie-icon';
@@ -3235,7 +3229,7 @@ function gamePvz(data) {
           } while (usedLanes[lane] && tries < 5);
           usedLanes[lane] = true;
           spawnZombieOnLane(lane);
-        }, idx * 1200); // 每只间隔1.2秒，节奏更舒缓
+        }, idx * 1100); // 每只间隔1.1秒
       })(i);
     }
 
@@ -3244,13 +3238,13 @@ function gamePvz(data) {
     updateSunDisplay();
     document.getElementById('pvzInfo').textContent = '🌊 第' + wave + '波来袭！(' + count + '只僵尸) +' + wb + '☀️';
 
-    // 波结束后暂停4秒，给你时间买植物
-    var waveDuration = 6000 + count * 1200; // 波内时间随数量增加
+    // 波结束后暂停3.5秒，给你时间买植物
+    var waveDuration = 5500 + count * 1100; // 波内时间随数量增加
     spawnTimer = setTimeout(function() {
       if (gameOver) return;
       WAVE_PAUSE = true;
-      document.getElementById('pvzInfo').textContent = '⏸️ 休息4秒…快用阳光买植物！';
-      // 暂停后4秒出下一波
+      document.getElementById('pvzInfo').textContent = '⏸️ 休息3.5秒…快用阳光买植物！';
+      // 暂��后3.5秒出下一波
       spawnTimer = setTimeout(function() {
         if (gameOver) return;
         startWave();
