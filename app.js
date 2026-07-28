@@ -1891,36 +1891,37 @@ function gamePvz(data) {
 
     var zombie = document.createElement('div');
     zombie.className = 'pvz-zombie';
-    zombie.style.top = '50%';
     zombie.style.animationDuration = spd + 's';
-    zombie.style.fontSize = typeKey === 'flag' ? '36px' : typeKey === 'bucket' ? '32px' : '28px';
-    zombie.textContent = type.icon;
     zombie.dataset.uid = uid;
     zombie.dataset.word = w.en;
     zombie.dataset.answer = w.zh;
 
-    // 单词标签
+    // 类型标记（小图标在最上方）
+    var badge = document.createElement('div');
+    badge.className = 'pvz-zombie-badge';
+    badge.textContent = typeKey === 'bucket' ? '🪣' : typeKey === 'cone' ? '🚧' : typeKey === 'flag' ? '🚩' : '';
+    zombie.appendChild(badge);
+
+    // 单词标签（中间，大字清晰）
     var wl = document.createElement('div');
     wl.className = 'pvz-word';
     wl.textContent = w.en;
-    wl.style.fontSize = '11px';
-    wl.style.background = '#fff';
     zombie.appendChild(wl);
 
-    // 血条容器
+    // 僵尸emoji图标
+    var icon = document.createElement('div');
+    icon.className = 'pvz-zombie-icon';
+    icon.textContent = type.icon;
+    zombie.appendChild(icon);
+
+    // 血条容器（最下方）
     var hpBarWrap = document.createElement('div');
-    hpBarWrap.style.cssText = 'position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:32px;height:5px;background:#374151;border-radius:3px;overflow:hidden;';
+    hpBarWrap.style.cssText = 'width:36px;height:5px;background:#374151;border-radius:3px;overflow:hidden;margin-top:1px;';
     var hpBarFill = document.createElement('div');
     hpBarFill.style.cssText = 'width:100%;height:100%;background:' + type.color + ';';
     hpBarFill.id = 'hpBar' + uid;
     hpBarWrap.appendChild(hpBarFill);
     zombie.appendChild(hpBarWrap);
-
-    // 僵尸类型标记
-    var badge = document.createElement('div');
-    badge.textContent = typeKey === 'bucket' ? '🪣' : typeKey === 'cone' ? '🚧' : typeKey === 'flag' ? '🚩' : '';
-    badge.style.cssText = 'position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:12px;';
-    zombie.appendChild(badge);
 
     var le = document.getElementById('pvzLane' + lane);
     if (le) le.appendChild(zombie);

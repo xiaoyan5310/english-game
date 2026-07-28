@@ -412,8 +412,10 @@ body {
 .pvz-area{position:relative;width:100%;height:380px;background:linear-gradient(180deg,#87CEEB 0%,#90EE90 35%,#228B22 100%);border-radius:var(--radius);overflow:hidden;margin-bottom:12px}
 .pvz-lane{height:20%;border-bottom:1px dashed rgba(255,255,255,.2);position:relative}
 .pvz-plant{position:absolute;font-size:28px;left:8%;top:50%;transform:translateY(-50%);transition:all .1s}
-.pvz-zombie{position:absolute;font-size:28px;right:-60px;top:50%;transform:translateY(-50%);animation:pvzWalk linear forwards;z-index:2}
-.pvz-word{position:absolute;font-size:11px;font-weight:700;background:#fff;color:#333;padding:2px 6px;border-radius:4px;top:-20px;left:50%;transform:translateX(-50%);white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.pvz-zombie{position:absolute;right:-70px;top:50%;transform:translateY(-50%);animation:pvzWalk linear forwards;z-index:2;display:flex;flex-direction:column;align-items:center;gap:1px}
+.pvz-zombie-icon{font-size:24px;line-height:1}
+.pvz-word{font-size:12px;font-weight:700;background:#fff;color:#333;padding:2px 8px;border-radius:4px;white-space:nowrap;box-shadow:0 1px 3px rgba(0,0,0,.3);text-align:center}
+.pvz-zombie-badge{font-size:11px;line-height:1;text-align:center}
 .pvz-options{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:8px 0}
 @keyframes pvzWalk{0%{right:-60px}100%{right:calc(100% + 60px)}}
 @keyframes bubFloat{0%{bottom:-60px;opacity:0}10%{opacity:1}90%{opacity:1}100%{bottom:105%;opacity:0}}
