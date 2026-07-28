@@ -1748,7 +1748,7 @@ function gamePvz(data) {
   var zombies = [], plants = [], gameLoop, sunLoop, plantAttackLoop, spawnTimer;
   var lanes = 5;
   var WAVE_PAUSE = false;  // 波间暂停标志
-  var WAVE_PAUSE_TIME = 3500; // 波间暂停3.5秒
+  var WAVE_PAUSE_TIME = 2000; // 波间暂停2秒
 
   // 植物商店
   var PLANT_SHOP = [
@@ -1885,7 +1885,7 @@ function gamePvz(data) {
     else if (wave >= 2 && roll < 0.35) typeKey = 'cone';
 
     var type = ZOMBIE_TYPES[typeKey];
-    var baseSpd = 15 + Math.random() * 4;
+    var baseSpd = 10 + Math.random() * 3; // 提高行走速度
     var spd = baseSpd / type.speedMul; // 血厚的走得更慢
     var uid = ++zombieUid;
 
@@ -1957,7 +1957,7 @@ function gamePvz(data) {
           } while (usedLanes[lane] && tries < 5);
           usedLanes[lane] = true;
           spawnZombieOnLane(lane);
-        }, idx * 1100); // 每只间隔1.1秒
+        }, idx * 1000); // 每只间隔1秒
       })(i);
     }
 
@@ -1966,13 +1966,12 @@ function gamePvz(data) {
     updateSunDisplay();
     document.getElementById('pvzInfo').textContent = '🌊 第' + wave + '波来袭！(' + count + '只僵尸) +' + wb + '☀️';
 
-    // 波结束后暂停3.5秒，给你时间买植物
-    var waveDuration = 5500 + count * 1100; // 波内时间随数量增加
+    // 波结束后暂停2秒
+    var waveDuration = 5000 + count * 1000;
     spawnTimer = setTimeout(function() {
       if (gameOver) return;
       WAVE_PAUSE = true;
-      document.getElementById('pvzInfo').textContent = '⏸️ 休息3.5秒…快用阳光买植物！';
-      // 暂停后3.5秒出下一波
+      document.getElementById('pvzInfo').textContent = '⏸️ 休息2秒…快用阳光买植物！';
       spawnTimer = setTimeout(function() {
         if (gameOver) return;
         startWave();
@@ -2131,6 +2130,16 @@ function gamePvz(data) {
     if (z.hp <= 0) {
       sunlight += bonus;
       updateOptions();
+      // 该行1秒后自动补一只僵尸
+      var deadLane = z.lane;
+      setTimeout(function() {
+        if (gameOver) return;
+        // 检查该行是否还有存活僵尸，没有才补
+        var stillAlive = zombies.some(function(zz) { return zz.alive && zz.lane === deadLane; });
+        if (!stillAlive) {
+          spawnZombieOnLane(deadLane);
+        }
+      }, 1000);
     }
     updateSunDisplay();
     document.getElementById('pvzScore').textContent = score;
