@@ -828,6 +828,7 @@ function showExerciseQuestion() {
     showExerciseResult();
     return;
   }
+  window._exerciseAnswered = false; // 重置答题状态
   updateExerciseUI();
   const q = state.exerciseQuestions[state.exerciseIndex];
 
