@@ -405,19 +405,21 @@ function renderVocab() {
   if (state.vocabTab === 'words') {
     container.innerHTML = `
       <div style="text-align:center; margin-bottom:12px; font-size:13px; color:var(--text-light);">
-        共 ${data.words.length} 个单词 · 点击翻转 | 🔊听发音 | 🎤跟读
+        共 ${data.words.length} 个单词 · 🔊听发音 | 🎤跟读
       </div>
       <div class="word-list">
         ${data.words.map((w, i) => `
-          <div class="word-item" onclick="flipWordCard(this)" data-en="${w.en}" data-zh="${w.zh}" data-type="${w.type}">
-            <div style="flex:1;min-width:0;">
-              <span class="word-en">${w.en}</span>
-            </div>
-            <div style="display:flex; align-items:center; gap:4px;flex-shrink:0;">
-              <span class="word-zh" style="display:none;margin-right:4px;">${w.zh}</span>
-              <span class="word-type">${w.type}</span>
-              <span style="font-size:16px;cursor:pointer;" onclick="event.stopPropagation();speakWord('${w.en}')">🔊</span>
-              <span style="font-size:16px;cursor:pointer;padding:2px;" onclick="event.stopPropagation();startSpeechRecognition('${w.en.replace(/'/g,"\\'")}')" title="跟读">🎤</span>
+          <div class="word-item" style="flex-direction:column;align-items:stretch;">
+            <div style="display:flex;align-items:center;justify-content:space-between;">
+              <div style="display:flex;align-items:baseline;gap:8px;flex:1;min-width:0;flex-wrap:wrap;">
+                <span class="word-en" style="font-size:16px;font-weight:700;">${w.en}</span>
+                ${w.phonetic ? `<span style="font-size:12px;color:var(--primary-light);font-style:italic;">${w.phonetic}</span>` : ''}
+                <span class="word-zh" style="font-size:14px;color:var(--text-light);">${w.zh}</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+                <span style="font-size:18px;cursor:pointer;" onclick="event.stopPropagation();speakWord('${w.en}')">🔊</span>
+                <span style="font-size:18px;cursor:pointer;padding:2px;" onclick="event.stopPropagation();startSpeechRecognition('${w.en.replace(/'/g,"\\'")}')" title="跟读">🎤</span>
+              </div>
             </div>
           </div>
         `).join('')}
