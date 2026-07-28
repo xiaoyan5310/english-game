@@ -3214,7 +3214,7 @@ function gamePvz(data) {
     WAVE_PAUSE = false;
     document.getElementById('pvzWave').textContent = wave;
 
-    var count = Math.min(2 + Math.floor(wave / 2), 4); // 每波2~4只，降低密度
+    var count = Math.min(1 + Math.floor(wave / 2), 3); // 每波1~3只，密度再降低
     var usedLanes = {};
 
     for (var i = 0; i < count; i++) {
@@ -3229,7 +3229,7 @@ function gamePvz(data) {
           } while (usedLanes[lane] && tries < 5);
           usedLanes[lane] = true;
           spawnZombieOnLane(lane);
-        }, idx * 1000); // 每只间隔1秒
+        }, idx * 1200); // 每只间隔1.2秒
       })(i);
     }
 
@@ -3239,7 +3239,7 @@ function gamePvz(data) {
     document.getElementById('pvzInfo').textContent = '🌊 第' + wave + '波来袭！(' + count + '只僵尸) +' + wb + '☀️';
 
     // 波结束后暂停2秒
-    var waveDuration = 5000 + count * 1000;
+    var waveDuration = 6000 + count * 1200;
     spawnTimer = setTimeout(function() {
       if (gameOver) return;
       WAVE_PAUSE = true;
