@@ -3115,6 +3115,14 @@ function gamePvz(data) {
   // 当前场上活跃的僵尸-单词映射：{ word_en: zh }
   var activeWords = {};
 
+  // 僵尸类型配置
+  var ZOMBIE_TYPES = {
+    normal: { icon: '🧟', hp: 2, speedMul: 1.0, name: '普通僵尸', color: '#84CC16' },
+    cone:   { icon: '🧟', hp: 4, speedMul: 0.9, name: '路障僵尸', color: '#F59E0B' },
+    bucket: { icon: '🧟', hp: 7, speedMul: 0.75, name: '铁桶僵尸', color: '#6B7280' },
+    flag:   { icon: '🧟', hp: 10, speedMul: 0.65, name: '旗手僵尸', color: '#EF4444' }
+  };
+
   // 生成僵尸：只从已选单元的 words 里取
   function spawnZombie() {
     if (gameOver) return;
@@ -3126,55 +3134,41 @@ function gamePvz(data) {
     var w = available[Math.floor(Math.random() * available.length)];
 
     var lane = Math.floor(Math.random() * lanes);
-    var spd = 15 + Math.random() * 4; // 15-19秒走完（比之前慢，给植物攻击时间）
-    var uid = ++zombieUid;
-
-    var zombie = document.createElement('div');
-    zombie.className = 'pvz-zombie';
-    zombie.style.top = '50%';
-    zombie.style.animationDuration = spd + 's';
-    zombie.style.fontSize = '28px';
-    zombie.textContent = '🧟';
-    zombie.dataset.uid = uid;
-    zombie.dataset.word = w.en;
-    zombie.dataset.answer = w.zh;
-
-    var wl = document.createElement('div');
-    wl.className = 'pvz-word';
-    wl.textContent = w.en;
-    wl.style.fontSize = '11px';
-    wl.style.background = '#fff';
-    zombie.appendChild(wl);
-
-    var le = document.getElementById('pvzLane' + lane);
-    if (le) le.appendChild(zombie);
-
-    var zObj = { uid: uid, el: zombie, lane: lane, word: w.en, answer: w.zh, spd: spd, alive: true, hp: 2, maxHp: 2 };
-    zombies.push(zObj);
-    activeWords[w.en] = w.zh;
-    updateOptions();
+    spawnZombieOnLane(lane, w);
   }
 
   // 在指定行生成僵尸（用于多行同时出僵尸）
-  function spawnZombieOnLane(lane) {
+  function spawnZombieOnLane(lane, forcedWord) {
     if (gameOver) return;
     if (words.length === 0) return;
+
     var available = words.filter(function(w) { return !activeWords[w.en]; });
     if (available.length === 0) available = words;
-    var w = available[Math.floor(Math.random() * available.length)];
-    var spd = 15 + Math.random() * 4;
+    var w = forcedWord || available[Math.floor(Math.random() * available.length)];
+
+    // 根据波次决定僵尸类型概率
+    var roll = Math.random();
+    var typeKey = 'normal';
+    if (wave >= 6 && roll < 0.08) typeKey = 'flag';
+    else if (wave >= 4 && roll < 0.20) typeKey = 'bucket';
+    else if (wave >= 2 && roll < 0.35) typeKey = 'cone';
+
+    var type = ZOMBIE_TYPES[typeKey];
+    var baseSpd = 15 + Math.random() * 4;
+    var spd = baseSpd / type.speedMul; // 血厚的走得更慢
     var uid = ++zombieUid;
 
     var zombie = document.createElement('div');
     zombie.className = 'pvz-zombie';
     zombie.style.top = '50%';
     zombie.style.animationDuration = spd + 's';
-    zombie.style.fontSize = '28px';
-    zombie.textContent = '🧟';
+    zombie.style.fontSize = typeKey === 'flag' ? '36px' : typeKey === 'bucket' ? '32px' : '28px';
+    zombie.textContent = type.icon;
     zombie.dataset.uid = uid;
     zombie.dataset.word = w.en;
     zombie.dataset.answer = w.zh;
 
+    // 单词标签
     var wl = document.createElement('div');
     wl.className = 'pvz-word';
     wl.textContent = w.en;
@@ -3182,10 +3176,28 @@ function gamePvz(data) {
     wl.style.background = '#fff';
     zombie.appendChild(wl);
 
+    // 血条容器
+    var hpBarWrap = document.createElement('div');
+    hpBarWrap.style.cssText = 'position:absolute;top:-10px;left:50%;transform:translateX(-50%);width:32px;height:5px;background:#374151;border-radius:3px;overflow:hidden;';
+    var hpBarFill = document.createElement('div');
+    hpBarFill.style.cssText = 'width:100%;height:100%;background:' + type.color + ';';
+    hpBarFill.id = 'hpBar' + uid;
+    hpBarWrap.appendChild(hpBarFill);
+    zombie.appendChild(hpBarWrap);
+
+    // 僵尸类型标记
+    var badge = document.createElement('div');
+    badge.textContent = typeKey === 'bucket' ? '🪣' : typeKey === 'cone' ? '🚧' : typeKey === 'flag' ? '🚩' : '';
+    badge.style.cssText = 'position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:12px;';
+    zombie.appendChild(badge);
+
     var le = document.getElementById('pvzLane' + lane);
     if (le) le.appendChild(zombie);
 
-    var zObj = { uid: uid, el: zombie, lane: lane, word: w.en, answer: w.zh, spd: spd, alive: true, hp: 2, maxHp: 2 };
+    var zObj = {
+      uid: uid, el: zombie, lane: lane, word: w.en, answer: w.zh, spd: spd, alive: true,
+      hp: type.hp, maxHp: type.hp, type: typeKey, typeName: type.name
+    };
     zombies.push(zObj);
     activeWords[w.en] = w.zh;
     updateOptions();
@@ -3338,15 +3350,16 @@ function gamePvz(data) {
       });
     }
 
-    // 玩家答题直接造成2点伤害（相当于豌豆打两次），基本一击必杀
-    z.hp -= 2;
+    // 玩家答题造成3点伤害，能打死普通/路障，铁桶要配合植物
+    z.hp -= 3;
+    updateZombieHpBar(z);
     var bonus = 5;
     var lp = plants.find(function(p) { return p.lane === z.lane && p.hp > 0; });
 
     if (lp && lp.chomp && z.hp <= 0) {
-      bonus = 10;
+      bonus = 10 + (z.type === 'bucket' || z.type === 'flag' ? 10 : 0);
       playBigKillSound();
-      document.getElementById('pvzInfo').textContent = '🌺 大嘴花一口吞掉！+' + bonus + '☀️';
+      document.getElementById('pvzInfo').textContent = '🌺 大嘴花一口吞掉' + z.typeName + '！+' + bonus + '☀️';
     } else if (lp && lp.bomb) {
       playBigKillSound();
       var lz = zombies.filter(function(zz) { return zz.alive && zz.lane === z.lane; });
@@ -3373,13 +3386,13 @@ function gamePvz(data) {
         if (lp && lp.attack) {
           document.getElementById('pvzInfo').textContent = '✅ ' + lp.icon + ' 发射！+' + bonus + '☀️';
         } else {
-          document.getElementById('pvzInfo').textContent = '✅ 消灭僵尸！+' + bonus + '☀️';
+          document.getElementById('pvzInfo').textContent = '✅ 消灭' + z.typeName + '！+' + bonus + '☀️';
         }
       } else {
         // 僵尸受伤但没死
         z.el.style.animation = 'shake 0.2s ease';
         setTimeout(function() { z.el.style.animation = 'pvzWalk ' + z.spd + 's linear forwards'; }, 200);
-        document.getElementById('pvzInfo').textContent = '💢 僵尸受伤了！再打一次！（剩' + z.hp + '血）';
+        document.getElementById('pvzInfo').textContent = '💢 ' + z.typeName + '受伤了！（剩' + z.hp + '血）';
       }
     }
 
@@ -3431,6 +3444,7 @@ function gamePvz(data) {
 
       // 造成伤害
       target.hp -= p.dmg;
+      updateZombieHpBar(target);
 
       if (target.hp <= 0) {
         // 植物打死僵尸
@@ -3450,6 +3464,14 @@ function gamePvz(data) {
       }
     });
   }, 400);
+
+  // 更新僵尸头顶血条
+  function updateZombieHpBar(z) {
+    var bar = document.getElementById('hpBar' + z.uid);
+    if (!bar) return;
+    var pct = Math.max(0, z.hp / z.maxHp * 100);
+    bar.style.width = pct + '%';
+  }
 
   // 子弹动画
   function shootBullet(plant, zombie) {
