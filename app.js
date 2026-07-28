@@ -1885,7 +1885,7 @@ function gamePvz(data) {
     else if (wave >= 2 && roll < 0.35) typeKey = 'cone';
 
     var type = ZOMBIE_TYPES[typeKey];
-    var baseSpd = 10 + Math.random() * 3; // 提高行走速度
+    var baseSpd = 12 + Math.random() * 3; // 调慢20%：12~15秒走完一行
     var spd = baseSpd / type.speedMul; // 血厚的走得更慢
     var uid = ++zombieUid;
 
@@ -2003,7 +2003,15 @@ function gamePvz(data) {
   renderShop();
 
   // 底部选项：严格对应场上存活僵尸的中文意思（平滑更新，不跳动）
+  var _updateOptionsTimer = null;
+
   function updateOptions() {
+    // 防抖：300ms内多次调用只执行最后一次
+    if (_updateOptionsTimer) clearTimeout(_updateOptionsTimer);
+    _updateOptionsTimer = setTimeout(_doUpdateOptions, 300);
+  }
+
+  function _doUpdateOptions() {
     var oe = document.getElementById('pvzOptions');
     if (!oe) return;
 
@@ -2022,7 +2030,7 @@ function gamePvz(data) {
     var allOptions = correctAnswers.concat(wrongs.map(function(w) { return w.zh; }))
       .sort(function() { return Math.random() - 0.5; });
 
-    // 固定6个按钮，永不增删，只更新内容，完全无跳动
+    // 固定6个按钮，永不增删，只更新内容
     var FIXED_COUNT = 6;
     var existingBtns = oe.querySelectorAll('button');
 
@@ -2049,7 +2057,7 @@ function gamePvz(data) {
           btn.style.visibility = 'visible';
         } else {
           btn.removeAttribute('onclick');
-          btn.style.visibility = 'hidden'; // 隐藏但不占位变，用 visibility 不影响布局
+          btn.style.visibility = 'hidden';
         }
       }
     }
